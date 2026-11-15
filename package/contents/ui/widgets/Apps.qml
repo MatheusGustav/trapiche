@@ -14,14 +14,53 @@ Tile {
     // Arquivos e pastas soltos na dock: { url, pasta }.
     readonly property var atalhos: Util.ler(Plasmoid.configuration.dados, "atalhos", [])
 
-    largura: Math.max(77, 10 + (lista.count + atalhos.length) * 72)
+    // Pastas de aplicativos, criadas ao arrastar um ícone para cima de outro: { nome, apps: [ids de code/apps.py] }.
+    readonly property var pastas: Util.ler(Plasmoid.configuration.dados, "pastasApps", [])
+    // Ícone de aplicativo sendo arrastado (-1 = nenhum), o centro dele na linha e a vaga em que cairia.
+    property int levado: -1
+    property real levadoX: 0
+    readonly property int alvo: {
+        const vaga = Math.floor(levadoX / 72)
+        if (levado < 0 || vaga < 0 || vaga === levado || vaga >= lista.count + pastas.length) return -1
+        return Math.abs(levadoX - (vaga * 72 + 36)) < 24 ? vaga : -1
+    }
+
+    largura: Math.max(77, 10 + (lista.count + pastas.length + atalhos.length) * 72)
     semFundo: true
 
+    // Sem nenhum fixado grava um espaço: opção vazia voltaria para os fixados padrão.
     function salvarFixados() {
-        Plasmoid.configuration.opcoes = Util.gravarOpcao(Plasmoid.configuration.opcoes, "apps", "fixados", tarefas.launcherList.join(","))
+        Plasmoid.configuration.opcoes = Util.gravarOpcao(Plasmoid.configuration.opcoes, "apps", "fixados", tarefas.launcherList.join(",") || " ")
     }
     function salvarAtalhos(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "atalhos", nova) }
 
+    function salvarPastas(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "pastasApps", nova) }
+    // Põe o aplicativo arrastado numa pasta: a que já existe na vaga ou uma nova, com o aplicativo que estava lá.
+    function juntar(de, para) {
+        const origem = lista.itemAt(de)
+        const destino = para < lista.count ? lista.itemAt(para) : null
+        if (!origem || origem.ident === "") return
+        if (para < lista.count && (!destino || destino.ident === "" || destino.ident === origem.ident)) return
+        const nova = pastas.map(p => ({ nome: p.nome, apps: p.apps.slice() }))
+        const desafixar = [origem, destino].filter(item => item && item.model.HasLauncher === true).map(item => item.model.LauncherUrlWithoutIcon)
+        if (destino) nova.push({ nome: "Pasta", apps: [destino.ident, origem.ident] })
+        else if (nova[para - lista.count].apps.indexOf(origem.ident) < 0) nova[para - lista.count].apps.push(origem.ident)
+        for (const url of desafixar) tarefas.requestRemoveLauncher(url)
+        salvarFixados()
+        salvarPastas(nova)
+    }
+    function fixarDeVolta(ids) {
+        for (const id of ids) tarefas.requestAddLauncher("applications:" + id + ".desktop")
+        salvarFixados()
+    }
+    function desfazerPasta(indice) {
+        fixarDeVolta(pastas[indice].apps)
+        salvarPastas(pastas.filter((p, n) => n !== indice))
+    }
+    function tirarDaPasta(indice, id) {
+        fixarDeVolta([id])
+        salvarPastas(pastas.map((p, n) => n === indice ? { nome: p.nome, apps: p.apps.filter(a => a !== id) } : p).filter(p => p.apps.length > 0))
+    }
     function alternarFixado(url, fixado) {
         if (fixado ? tarefas.requestRemoveLauncher(url) : tarefas.requestAddLauncher(url)) salvarFixados()
     }
@@ -109,13 +148,18 @@ Tile {
                 mainText: model.AppName || model.display
                 readonly property bool aberto: model.IsWindow === true || model.IsGroupParent === true
                 readonly property bool ativo: model.IsActive === true
+                readonly property string ident: String(model.AppId || "").replace(/\.desktop$/, "")
+                property real desloc: 0
+                Behavior on desloc { enabled: raiz.levado !== app.index; NumberAnimation { duration: Tema.rapido } }
 
                 width: 72; height: 77
+                z: raiz.levado === index ? 1 : 0
 
                 Figura {
                     id: figura
-                    sobre: toque.containsMouse || soltura.containsDrag
-                    apertado: toque.pressed
+                    sobre: toque.containsMouse || soltura.containsDrag || raiz.alvo === app.index
+                    apertado: toque.pressed && raiz.levado !== app.index
+                    transform: Translate { x: app.desloc }
 
                     Kirigami.Icon {
                         anchors.fill: parent
@@ -142,7 +186,35 @@ Tile {
                     anchors.fill: parent
                     hoverEnabled: true
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                    // Arrastar o ícone para cima de outro (ou de uma pasta) junta os dois numa pasta.
+                    property real inicio: 0
+                    property bool arrastou: false
+                    function largar(valendo) {
+                        if (raiz.levado !== app.index) return
+                        const para = raiz.alvo
+                        raiz.levado = -1
+                        app.desloc = 0
+                        if (valendo && para >= 0) raiz.juntar(app.index, para)
+                    }
+                    onPressed: mouse => {
+                        inicio = mouse.x
+                        arrastou = false
+                    }
+                    onPositionChanged: mouse => {
+                        if (!(mouse.buttons & Qt.LeftButton) || app.ident === "") return
+                        if (raiz.levado !== app.index && Math.abs(mouse.x - inicio) > 10) {
+                            raiz.levado = app.index
+                            arrastou = true
+                        }
+                        if (raiz.levado === app.index) {
+                            app.desloc = mouse.x - inicio
+                            raiz.levadoX = app.x + 36 + app.desloc
+                        }
+                    }
+                    onReleased: largar(true)
+                    onCanceled: largar(false)
                     onClicked: mouse => {
+                        if (arrastou) return
                         const indice = tarefas.makeModelIndex(app.index)
                         if (mouse.button === Qt.RightButton) {
                             const url = app.model.LauncherUrlWithoutIcon
@@ -174,6 +246,38 @@ Tile {
                     id: ativarAoPairar
                     interval: 400
                     onTriggered: tarefas.requestActivate(tarefas.makeModelIndex(app.index))
+                }
+            }
+        }
+        Repeater {
+            model: raiz.pastas
+
+            Item {
+                id: grupo
+                required property var modelData
+                required property int index
+
+                width: 72; height: 77
+
+                PastaApps {
+                    id: conteudo
+                    anchors.centerIn: parent
+                    anchors.verticalCenterOffset: -2
+                    ids: grupo.modelData.apps
+                    nome: grupo.modelData.nome
+                    sobre: toqueGrupo.containsMouse
+                    destaque: raiz.alvo === lista.count + grupo.index
+                    onMenuDoApp: (aplicativo, celula) => raiz.abrirMenu(celula, "Tirar da pasta", () => raiz.tirarDaPasta(grupo.index, aplicativo.id))
+                }
+                MouseArea {
+                    id: toqueGrupo
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    onClicked: mouse => {
+                        if (mouse.button === Qt.RightButton) raiz.abrirMenu(grupo, "Desfazer a pasta", () => raiz.desfazerPasta(grupo.index))
+                        else conteudo.alternar()
+                    }
                 }
             }
         }

@@ -1,0 +1,17 @@
+singleton Tema Tema.qml
+Tile Tile.qml
+Texto Texto.qml
+Barra Barra.qml
+Anel Anel.qml
+Faisca Faisca.qml
+BotaoRedondo BotaoRedondo.qml
+Icone Icone.qml
+Marca Marca.qml
+Balao Balao.qml
+Raio Raio.qml
+Deslizante Deslizante.qml
+GradeArquivos GradeArquivos.qml
+Capa Capa.qml
+BotaoAcao BotaoAcao.qml
+Mostrador Mostrador.qml
+BarrasHoras BarrasHoras.qml

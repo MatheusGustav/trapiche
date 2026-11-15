@@ -1,0 +1,13 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Id": "io.github.matheusgustav.trapiche",
+        "Name": "Trapiche",
+        "Description": "Dock com widgets ao vivo",
+        "Icon": "applications-system",
+        "Category": "System Information",
+        "Version": "0.1.0",
+        "Website": "https://github.com/MatheusGustav/trapiche"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

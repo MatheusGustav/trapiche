@@ -44,7 +44,7 @@ Tile {
         id: desenho
         readonly property bool aberta: balao.visible
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: 2
+        anchors.verticalCenterOffset: -3
         width: 42; height: 34
         scale: 1.15
 

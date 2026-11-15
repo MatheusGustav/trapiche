@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
-import org.kde.ksvg as KSvg
 import "comp"
 import "catalogo.js" as Catalogo
 
@@ -10,7 +9,7 @@ PlasmoidItem {
     id: raiz
 
     readonly property bool emPainel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
-    // Painel do Plasma em que a dock está e os itens dele que desenham o fundo do tema (todos com a mesma geometria).
+    // Painel do Plasma em que a dock está e os itens dele que desenhariam o fundo do tema (todos com a mesma geometria).
     property Item painel: null
     property var fundosDoPainel: []
     readonly property Item moldeDoVidro: fundosDoPainel.length > 0 ? fundosDoPainel[0] : null
@@ -62,31 +61,12 @@ PlasmoidItem {
         onTriggered: raiz.acharPainel()
     }
 
-    // Esconde o fundo do tema sem desligar o desfoque que o Plasma aplica atrás do painel.
-    Instantiator {
-        model: raiz.fundosDoPainel
-        delegate: Binding {
-            required property var modelData
-            target: modelData
-            property: "visible"
-            value: false
-            restoreMode: Binding.RestoreBindingOrValue
-        }
-    }
-
-    // O desfoque do Plasma segue a máscara do fundo do tema, de cantos quase retos; esta moldura dá a ele os cantos do vidro.
-    KSvg.FrameSvgItem {
-        id: mascara
-        parent: raiz.painel
-        opacity: 0
-        x: vidro.x; y: vidro.y; width: vidro.width; height: vidro.height
-        imagePath: decodeURIComponent(Qt.resolvedUrl("../images/mascara-vidro.svg").toString().replace(/^file:\/\//, ""))
-    }
+    // Painel sem fundo: o Plasma não desenha o tema nem desfoca o que está atrás, e o vidro fica transparente de verdade.
     Binding {
-        target: raiz.painel
-        property: "panelMask"
-        value: mascara.mask
-        when: raiz.moldeDoVidro !== null && raiz.flutua === 1
+        target: Plasmoid.containment
+        property: "backgroundHints"
+        value: PlasmaCore.Types.NoBackground
+        when: raiz.emPainel
         restoreMode: Binding.RestoreBindingOrValue
     }
 
@@ -103,8 +83,16 @@ PlasmoidItem {
         color: Tema.vidro
         border.color: Tema.vidroBorda
         border.width: 1
-        radius: 24 * raiz.flutua    // flutuando, o mesmo raio de images/mascara-vidro.svg; encostado na borda, reto
+        radius: 24 * raiz.flutua    // encostado na borda da tela, reto
 
+        // Aro claro por dentro da borda, como a beirada de um vidro.
+        Rectangle {
+            anchors { fill: parent; margins: 1 }
+            radius: Math.max(0, vidro.radius - 1)
+            color: "transparent"
+            border.color: Tema.brilho
+            border.width: 2
+        }
         Rectangle {
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 1 }
             height: parent.height * 0.5

@@ -14,7 +14,7 @@ Tile {
     // Arquivos e pastas soltos na dock: { url, pasta }.
     readonly property var atalhos: Util.ler(Plasmoid.configuration.dados, "atalhos", [])
 
-    largura: Math.max(77, 14 + (lista.count + atalhos.length) * 50)
+    largura: Math.max(77, 14 + (lista.count + atalhos.length) * 62)
     semFundo: true
 
     function salvarFixados() {
@@ -54,6 +54,21 @@ Tile {
         menu.acao = acao
         menu.visualParent = item
         menu.openRelative()
+    }
+
+    // Quadro em que cada ícone do bloco fica.
+    component Quadro: Rectangle {
+        property bool sobre: false
+        property bool apertado: false
+        property real salto: 0
+
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 8 + salto
+        width: 56; height: 56; radius: 16
+        color: Tema.tile
+        border.color: Tema.borda
+        scale: apertado ? 0.9 : (sobre ? 1.08 : 1)
+        Behavior on scale { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
     }
 
     Comando { id: executor }
@@ -97,28 +112,27 @@ Tile {
                 readonly property bool aberto: model.IsWindow === true || model.IsGroupParent === true
                 readonly property bool ativo: model.IsActive === true
 
-                width: 50; height: 77
+                width: 62; height: 77
 
-                Kirigami.Icon {
-                    id: icone
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: (toque.containsMouse ? 8 : 14) + salto
-                    width: 42; height: 42
-                    source: app.model.decoration
-                    scale: toque.pressed ? 0.88 : (toque.containsMouse || soltura.containsDrag ? 1.18 : 1)
-                    property real salto: 0
-                    Behavior on scale { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
-                    Behavior on y { enabled: !pulo.running; SpringAnimation { spring: 5; damping: 0.4; mass: 0.5 } }
+                Quadro {
+                    id: quadro
+                    sobre: toque.containsMouse || soltura.containsDrag
+                    apertado: toque.pressed
 
+                    Kirigami.Icon {
+                        anchors.centerIn: parent
+                        width: 38; height: 38
+                        source: app.model.decoration
+                    }
                     SequentialAnimation {
                         id: pulo
                         loops: 2
-                        NumberAnimation { target: icone; property: "salto"; to: -14; duration: 190; easing.type: Easing.OutQuad }
-                        NumberAnimation { target: icone; property: "salto"; to: 0; duration: 260; easing.type: Easing.OutBounce }
+                        NumberAnimation { target: quadro; property: "salto"; to: -10; duration: 190; easing.type: Easing.OutQuad }
+                        NumberAnimation { target: quadro; property: "salto"; to: 0; duration: 260; easing.type: Easing.OutBounce }
                     }
                 }
                 Rectangle {
-                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 8 }
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 5 }
                     height: 4; radius: 2
                     width: app.ativo ? 16 : 4
                     color: app.model.IsDemandingAttention === true ? Tema.laranja : Tema.azul
@@ -175,25 +189,23 @@ Tile {
                 required property int index
                 readonly property string nome: decodeURIComponent(modelData.url.replace(/\/$/, "").split("/").pop())
 
-                width: 50; height: 77
+                width: 62; height: 77
                 mainText: nome
 
-                Item {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: toqueAtalho.containsMouse ? 8 : 14
-                    width: 42; height: 42
-                    scale: toqueAtalho.pressed ? 0.88 : (toqueAtalho.containsMouse ? 1.18 : 1)
-                    Behavior on scale { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
-                    Behavior on y { SpringAnimation { spring: 5; damping: 0.4; mass: 0.5 } }
+                Quadro {
+                    sobre: toqueAtalho.containsMouse
+                    apertado: toqueAtalho.pressed
 
                     Kirigami.Icon {
-                        anchors.fill: parent
+                        anchors.centerIn: parent
+                        width: 38; height: 38
                         visible: miniatura.status !== Image.Ready
                         source: Util.iconeArquivo(atalho.nome, atalho.modelData.pasta)
                     }
                     Image {
                         id: miniatura
-                        anchors.fill: parent
+                        anchors.centerIn: parent
+                        width: 38; height: 38
                         source: !atalho.modelData.pasta && Util.ehImagem(atalho.nome) ? atalho.modelData.url : ""
                         sourceSize: Qt.size(84, 84)
                         fillMode: Image.PreserveAspectFit

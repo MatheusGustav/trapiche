@@ -5,12 +5,12 @@ import org.kde.kirigami as Kirigami
 QtObject {
     readonly property bool escuro: Kirigami.ColorUtils.brightnessForColor(Kirigami.Theme.backgroundColor) === Kirigami.ColorUtils.Dark
 
-    // Vidro: a barra da dock e, por cima dela, os blocos.
-    readonly property color vidro: escuro ? "#66121218" : "#73ffffff"
-    readonly property color vidroBorda: escuro ? "#3dffffff" : "#b3ffffff"
-    readonly property color tile: escuro ? "#17ffffff" : "#52ffffff"
-    readonly property color borda: escuro ? "#26ffffff" : "#80ffffff"
-    readonly property color brilho: escuro ? "#12ffffff" : "#4dffffff"
+    // Vidro: a barra da dock, clara e quase transparente, e por cima dela os blocos, escuros no tema escuro.
+    readonly property color vidro: escuro ? "#21ffffff" : "#73ffffff"
+    readonly property color vidroBorda: escuro ? "#80ffffff" : "#b3ffffff"
+    readonly property color tile: escuro ? "#9912121a" : "#52ffffff"
+    readonly property color borda: escuro ? "#29ffffff" : "#80ffffff"
+    readonly property color brilho: escuro ? "#14ffffff" : "#4dffffff"
     readonly property color texto: escuro ? "#f5f5f7" : "#1c1c1e"
     readonly property color textoFraco: escuro ? "#9c9ca6" : "#6b6b74"
     readonly property color trilho: escuro ? "#30ffffff" : "#1f000000"

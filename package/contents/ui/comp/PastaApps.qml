@@ -16,7 +16,7 @@ Item {
 
     signal menuDoApp(var app, Item celula)
 
-    width: 57; height: 57
+    width: 48; height: 48
     onPedidoChanged: carregar()
 
     function alternar() { balao.alternar() }
@@ -34,7 +34,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 15
+        radius: 12
         color: Tema.botao
         border.width: pasta.destaque ? 2 : 0
         border.color: Tema.azul
@@ -44,13 +44,13 @@ Item {
         Grid {
             anchors.centerIn: parent
             columns: 2
-            spacing: pasta.sobre ? 5 : 3
+            spacing: pasta.sobre ? 4 : 2
             Behavior on spacing { NumberAnimation { duration: Tema.rapido } }
             Repeater {
                 model: pasta.apps.slice(0, 4)
                 Kirigami.Icon {
                     required property var modelData
-                    width: 22; height: 22
+                    width: 18; height: 18
                     source: modelData.icone
                 }
             }
@@ -59,7 +59,7 @@ Item {
             anchors.centerIn: parent
             visible: pasta.apps.length === 0
             source: "list-add-symbolic"
-            tam: 22
+            tam: 18
             cor: Tema.textoFraco
         }
     }

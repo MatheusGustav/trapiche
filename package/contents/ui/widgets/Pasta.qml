@@ -46,7 +46,7 @@ Tile {
         anchors.centerIn: parent
         anchors.verticalCenterOffset: 2
         width: 42; height: 34
-        scale: 1.45
+        scale: 1.15
 
         Rectangle { x: 2; y: 0; width: 17; height: 10; radius: 3.5; color: Qt.darker(Tema.azul, 1.35) }
         Rectangle { y: 5; width: 42; height: 29; radius: 6; color: Qt.darker(Tema.azul, 1.35) }

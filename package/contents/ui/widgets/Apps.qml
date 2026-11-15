@@ -18,16 +18,18 @@ Tile {
     readonly property var pastas: Util.ler(Plasmoid.configuration.dados, "pastasApps", [])
     // Com o clique num ícone de aplicativo, quem arrasta é o ícone: a dock não solta o bloco inteiro.
     property bool arrasteProprio: false
+    // Largura da vaga de cada ícone.
+    readonly property int passo: 60
     // Ícone de aplicativo sendo arrastado (-1 = nenhum), o centro dele na linha e a vaga em que cairia.
     property int levado: -1
     property real levadoX: 0
     readonly property int alvo: {
-        const vaga = Math.floor(levadoX / 72)
+        const vaga = Math.floor(levadoX / passo)
         if (levado < 0 || vaga < 0 || vaga === levado || vaga >= lista.count + pastas.length) return -1
-        return Math.abs(levadoX - (vaga * 72 + 36)) < 24 ? vaga : -1
+        return Math.abs(levadoX - (vaga + 0.5) * passo) < passo / 3 ? vaga : -1
     }
 
-    largura: Math.max(77, 10 + (lista.count + pastas.length + atalhos.length) * 72)
+    largura: Math.max(77, 10 + (lista.count + pastas.length + atalhos.length) * passo)
     semFundo: true
 
     // Sem nenhum fixado grava um espaço: opção vazia voltaria para os fixados padrão.
@@ -104,8 +106,8 @@ Tile {
         property real salto: 0
 
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 5 + salto
-        width: 62; height: 62
+        y: 11 + salto
+        width: 50; height: 50
         scale: apertado ? 0.88 : (sobre ? 1.15 : 1)
         Behavior on scale { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
     }
@@ -154,7 +156,7 @@ Tile {
                 property real desloc: 0
                 Behavior on desloc { enabled: raiz.levado !== app.index; NumberAnimation { duration: Tema.rapido } }
 
-                width: 72; height: 77
+                width: raiz.passo; height: 77
                 z: raiz.levado === index ? 1 : 0
 
                 Figura {
@@ -212,7 +214,7 @@ Tile {
                         }
                         if (raiz.levado === app.index) {
                             app.desloc = mouse.x - inicio
-                            raiz.levadoX = app.x + 36 + app.desloc
+                            raiz.levadoX = app.x + raiz.passo / 2 + app.desloc
                         }
                     }
                     onReleased: largar(true)
@@ -261,7 +263,7 @@ Tile {
                 required property var modelData
                 required property int index
 
-                width: 72; height: 77
+                width: raiz.passo; height: 77
 
                 PastaApps {
                     id: conteudo
@@ -294,7 +296,7 @@ Tile {
                 required property int index
                 readonly property string nome: decodeURIComponent(modelData.url.replace(/\/$/, "").split("/").pop())
 
-                width: 72; height: 77
+                width: raiz.passo; height: 77
                 mainText: nome
 
                 Figura {

@@ -89,10 +89,11 @@ Tile {
             id: lista
             model: tarefas
 
-            Item {
+            PlasmaCore.ToolTipArea {
                 id: app
                 required property int index
                 required property var model
+                mainText: model.AppName || model.display
                 readonly property bool aberto: model.IsWindow === true || model.IsGroupParent === true
                 readonly property bool ativo: model.IsActive === true
 

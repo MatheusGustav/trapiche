@@ -5,14 +5,13 @@ import org.kde.plasma.plasmoid
 import "comp"
 import "util.js" as Util
 
-// Notas adesivas guardadas atrás do vidro da dock: só a ponta colorida de cada uma aparece acima dele.
-// Passar o mouse levanta a ponta; clicar faz a nota subir de trás da barra. A última ponta, com "+", cria uma nota.
+// Notas adesivas guardadas atrás da dock: de cada uma só aparece um tracinho colorido em cima do vidro, no canto esquerdo.
+// Passar o mouse levanta o tracinho; clicar faz a nota subir de trás da barra. O último tracinho, com "+", cria uma nota.
 Item {
     id: adesivos
 
-    property Item painel: null      // painel do Plasma, onde as pontas são desenhadas, por baixo do vidro
+    property Item painel: null      // painel do Plasma, onde os tracinhos são desenhados
     property Item molde: null       // item do painel com a geometria do vidro
-    property real fim: 0            // onde a fileira de pontas termina, na largura da dock
 
     readonly property var cores: [Tema.amarelo, Tema.laranja, Tema.verde, Tema.ciano, Tema.roxo, Tema.vermelho]
     // { cor: índice em cores, texto }
@@ -22,19 +21,11 @@ Item {
     // Nota que acabou de fechar: o clique na ponta dela pode chegar depois de o balão já ter fechado sozinho, e não a reabre.
     property int recemFechada: -1
 
-    readonly property int larguraPonta: 34
-    readonly property int alturaPonta: 30
-    readonly property int vao: 6
-    // Canto da dock dentro do painel. Refeito quando a dock ou o painel mudam de tamanho.
-    readonly property point origem: {
-        fim; parent.width; parent.height
-        if (!painel || !molde) return Qt.point(0, 0)
-        painel.width; molde.y
-        return parent.mapToItem(painel, 0, 0)
-    }
-    // Espaço que sobra na janela do painel acima do vidro: é o quanto uma ponta consegue aparecer.
+    readonly property int larguraPonta: 64
+    readonly property int larguraMais: 26
+    readonly property int vao: 8
+    // Espaço que sobra na janela do painel acima do vidro: é o quanto um tracinho consegue aparecer.
     readonly property real folga: molde ? molde.y : 0
-    readonly property real inicio: Math.max(0, fim - (notas.length + 1) * (larguraPonta + vao))
 
     function salvar(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "adesivos", nova) }
     function criar() {
@@ -83,59 +74,57 @@ Item {
         if (indice >= 0 && notas[indice] && notas[indice].texto.trim() === "") salvar(notas.filter((n, k) => k !== indice))
     }
 
-    // Pontas, desenhadas no painel por baixo do vidro.
+    // Fileira no painel, a partir de onde a borda de cima do vidro fica reta.
     Item {
         parent: adesivos.painel
-        visible: adesivos.visible
-        z: -2
-        x: adesivos.origem.x + adesivos.inicio
-        y: adesivos.molde ? adesivos.molde.y : 0
+        visible: adesivos.visible && adesivos.folga > 0
+        z: 1
+        x: adesivos.molde ? adesivos.molde.x + 26 : 0
 
-        Repeater {
-            model: adesivos.notas.length + 1
+        // Só o que está acima do vidro aparece: o resto da nota fica escondido atrás da barra.
+        Item {
+            width: (adesivos.notas.length + 1) * (adesivos.larguraPonta + adesivos.vao)
+            height: adesivos.folga
+            clip: true
 
-            Rectangle {
-                id: ponta
-                required property int index
-                readonly property bool nova: index === adesivos.notas.length
-                readonly property bool levantada: adesivos.sobre === index || adesivos.aberta === index
+            Repeater {
+                model: adesivos.notas.length + 1
 
-                x: index * (adesivos.larguraPonta + adesivos.vao)
-                y: -Math.min(adesivos.folga, levantada ? 8 : 5)
-                width: adesivos.larguraPonta
-                height: adesivos.alturaPonta
-                topLeftRadius: 6
-                topRightRadius: 6
-                color: nova ? (Tema.escuro ? "#59ffffff" : "#59000000") : adesivos.cores[adesivos.notas[index].cor % adesivos.cores.length]
-                Behavior on y { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
+                Rectangle {
+                    id: ponta
+                    required property int index
+                    readonly property bool nova: index === adesivos.notas.length
+                    readonly property bool levantada: adesivos.sobre === index || adesivos.aberta === index
 
-                Icone {
-                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 11 }
-                    visible: ponta.nova
-                    source: "list-add-symbolic"
-                    tam: 12
-                    cor: "white"
+                    x: index * (adesivos.larguraPonta + adesivos.vao)
+                    y: adesivos.folga - Math.min(adesivos.folga, levantada ? 8 : 5)
+                    width: nova ? adesivos.larguraMais : adesivos.larguraPonta
+                    height: 12
+                    radius: 3
+                    color: nova ? (Tema.escuro ? "#73ffffff" : "#73000000") : adesivos.cores[adesivos.notas[index].cor % adesivos.cores.length]
+                    Behavior on y { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
+
+                    Rectangle { visible: ponta.nova; anchors.horizontalCenter: parent.horizontalCenter; y: 3.25; width: 7; height: 1.5; color: Tema.escuro ? "#1c1c1e" : "white" }
+                    Rectangle { visible: ponta.nova; anchors.horizontalCenter: parent.horizontalCenter; y: 0.5; width: 1.5; height: 7; color: Tema.escuro ? "#1c1c1e" : "white" }
                 }
             }
         }
-    }
+        // O toque desce um pouco além do vidro, até onde os blocos começam.
+        Repeater {
+            id: toques
+            model: adesivos.notas.length + 1
 
-    // O toque fica na dock, por cima do painel; as pontas, por baixo do vidro, não receberiam o mouse.
-    Repeater {
-        id: toques
-        model: adesivos.notas.length + 1
+            MouseArea {
+                required property int index
 
-        MouseArea {
-            required property int index
-
-            x: adesivos.inicio + index * (adesivos.larguraPonta + adesivos.vao)
-            y: -adesivos.origem.y
-            width: adesivos.larguraPonta
-            height: adesivos.folga + adesivos.alturaPonta - 5
-            hoverEnabled: true
-            onEntered: adesivos.sobre = index
-            onExited: if (adesivos.sobre === index) adesivos.sobre = -1
-            onClicked: index === adesivos.notas.length ? adesivos.criar() : adesivos.abrir(index)
+                x: index * (adesivos.larguraPonta + adesivos.vao)
+                width: index === adesivos.notas.length ? adesivos.larguraMais : adesivos.larguraPonta
+                height: adesivos.folga + 4
+                hoverEnabled: true
+                onEntered: adesivos.sobre = index
+                onExited: if (adesivos.sobre === index) adesivos.sobre = -1
+                onClicked: index === adesivos.notas.length ? adesivos.criar() : adesivos.abrir(index)
+            }
         }
     }
 

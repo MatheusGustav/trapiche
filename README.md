@@ -19,6 +19,8 @@ Além do Plasma 6: `qdbus-qt6`, `wpctl`, `nmcli`, `bluetoothctl` e `kioclient`, 
 
 Clima, criptomoeda, câmbio e ações consultam serviços públicos pela internet (Open-Meteo, Binance, open.er-api.com e Yahoo Finance).
 
+Os widgets do GitHub usam o login do `gh` (`gh auth login`). Os de uso de IA leem, com `python3`, os registros locais do Claude Code (`~/.claude/projects`) e o banco local do OpenCode; o resumo do Claude fica em cache em `~/.cache/trapiche`.
+
 ## Desenvolvimento
 
 `dev/foto.sh saida.png` roda o plasmoide num compositor virtual, fora da tela e com configuração descartável, e salva uma foto. As variáveis `WIDGETS`, `OPCOES`, `DADOS` e `ABRIR` montam o cenário.

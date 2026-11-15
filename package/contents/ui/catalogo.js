@@ -58,7 +58,15 @@ var itens = [
            { k: "de", r: "De (código da moeda)", t: "texto", p: "USD" },
            { k: "para", r: "Para (código da moeda)", t: "texto", p: "BRL" }] },
     { id: "acoes", nome: "Ações", cat: "Mercado", arq: "Acoes.qml",
-      op: [{ k: "simbolos", r: "Símbolos do Yahoo Finance (até 3, separados por vírgula)", t: "texto", p: "AAPL,PETR4.SA,^BVSP" }] }
+      op: [{ k: "simbolos", r: "Símbolos do Yahoo Finance (até 3, separados por vírgula)", t: "texto", p: "AAPL,PETR4.SA,^BVSP" }] },
+    { id: "uso-ia", nome: "Uso de IA (resumo)", cat: "IA", arq: "UsoIAResumo.qml" },
+    { id: "claude-plano", nome: "Claude Code (sessão, semana e modelo)", cat: "IA", arq: "ClaudePlano.qml" },
+    { id: "claude-uso", nome: "Claude Code (sessão)", cat: "IA", arq: "ClaudeUso.qml" },
+    { id: "opencode-plano", nome: "OpenCode (sessão, semana e modelo)", cat: "IA", arq: "OpenCodePlano.qml" },
+    { id: "opencode-uso", nome: "OpenCode (sessão)", cat: "IA", arq: "OpenCodeUso.qml" },
+    { id: "github-atividade", nome: "GitHub (atividade)", cat: "Desenvolvimento", arq: "GitHubAtividade.qml" },
+    { id: "github-visao", nome: "GitHub (visão geral)", cat: "Desenvolvimento", arq: "GitHubVisao.qml" },
+    { id: "github", nome: "GitHub (não lidas)", cat: "Desenvolvimento", arq: "GitHubNaoLidas.qml" }
 ]
 
 function achar(id) {

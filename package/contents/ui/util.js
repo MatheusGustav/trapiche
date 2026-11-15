@@ -141,3 +141,16 @@ function variacao(porcento) {
     if (porcento === null || porcento === undefined || isNaN(porcento)) return ""
     return (porcento >= 0 ? "▲ " : "▼ ") + Math.abs(porcento).toFixed(2).replace(".", ",") + "%"
 }
+
+// "claude-opus-5-5" -> "Opus 5.5"; "deepseek-v4-pro" -> "Deepseek v4 pro"
+function nomeModelo(id) {
+    if (!id) return "–"
+    let nome = id.replace(/^claude-/, "").replace(/-\d{8}$/, "")
+    nome = nome.replace(/(\d)-(\d)/g, "$1.$2").replace(/-/g, " ")
+    return nome.charAt(0).toUpperCase() + nome.slice(1)
+}
+
+// Caminho de um script do pacote, pronto para o terminal. "base" é Qt.resolvedUrl(".") de um arquivo em ui/<pasta>/.
+function script(base, nome) {
+    return aspas(decodeURIComponent(String(base).replace(/^file:\/\//, "")) + "../../code/" + nome)
+}

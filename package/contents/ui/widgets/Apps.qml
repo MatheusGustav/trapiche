@@ -14,7 +14,7 @@ Tile {
     // Arquivos e pastas soltos na dock: { url, pasta }.
     readonly property var atalhos: Util.ler(Plasmoid.configuration.dados, "atalhos", [])
 
-    largura: Math.max(77, 14 + (lista.count + atalhos.length) * 62)
+    largura: Math.max(77, (lista.count + atalhos.length) * 85 - 8)
     semFundo: true
 
     function salvarFixados() {
@@ -56,19 +56,28 @@ Tile {
         menu.openRelative()
     }
 
-    // Quadro em que cada ícone do bloco fica.
+    // Cada ícone fica num quadro do tamanho e com a cara de um bloco da dock.
     component Quadro: Rectangle {
         property bool sobre: false
         property bool apertado: false
         property real salto: 0
 
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: 8 + salto
-        width: 56; height: 56; radius: 16
+        y: salto
+        width: 77; height: 77; radius: 24
         color: Tema.tile
         border.color: Tema.borda
-        scale: apertado ? 0.9 : (sobre ? 1.08 : 1)
+        scale: apertado ? 0.94 : (sobre ? 1.05 : 1)
         Behavior on scale { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
+
+        Rectangle {
+            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 1 }
+            height: parent.height / 2
+            radius: 23
+            gradient: Gradient {
+                GradientStop { position: 0; color: Tema.brilho }
+                GradientStop { position: 1; color: "transparent" }
+            }
+        }
     }
 
     Comando { id: executor }
@@ -100,6 +109,7 @@ Tile {
 
     Row {
         anchors.centerIn: parent
+        spacing: 8
         Repeater {
             id: lista
             model: tarefas
@@ -112,7 +122,7 @@ Tile {
                 readonly property bool aberto: model.IsWindow === true || model.IsGroupParent === true
                 readonly property bool ativo: model.IsActive === true
 
-                width: 62; height: 77
+                width: 77; height: 77
 
                 Quadro {
                     id: quadro
@@ -121,7 +131,7 @@ Tile {
 
                     Kirigami.Icon {
                         anchors.centerIn: parent
-                        width: 38; height: 38
+                        width: 46; height: 46
                         source: app.model.decoration
                     }
                     SequentialAnimation {
@@ -132,7 +142,7 @@ Tile {
                     }
                 }
                 Rectangle {
-                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 5 }
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 6 }
                     height: 4; radius: 2
                     width: app.ativo ? 16 : 4
                     color: app.model.IsDemandingAttention === true ? Tema.laranja : Tema.azul
@@ -189,7 +199,7 @@ Tile {
                 required property int index
                 readonly property string nome: decodeURIComponent(modelData.url.replace(/\/$/, "").split("/").pop())
 
-                width: 62; height: 77
+                width: 77; height: 77
                 mainText: nome
 
                 Quadro {
@@ -198,14 +208,14 @@ Tile {
 
                     Kirigami.Icon {
                         anchors.centerIn: parent
-                        width: 38; height: 38
+                        width: 46; height: 46
                         visible: miniatura.status !== Image.Ready
                         source: Util.iconeArquivo(atalho.nome, atalho.modelData.pasta)
                     }
                     Image {
                         id: miniatura
                         anchors.centerIn: parent
-                        width: 38; height: 38
+                        width: 46; height: 46
                         source: !atalho.modelData.pasta && Util.ehImagem(atalho.nome) ? atalho.modelData.url : ""
                         sourceSize: Qt.size(84, 84)
                         fillMode: Image.PreserveAspectFit

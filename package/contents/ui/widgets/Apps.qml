@@ -61,9 +61,13 @@ Tile {
         fixarDeVolta(pastas[indice].apps)
         salvarPastas(pastas.filter((p, n) => n !== indice))
     }
+    // Tira o aplicativo da pasta e o fixa de volta. A pasta que ficaria com um aplicativo só é desfeita.
     function tirarDaPasta(indice, id) {
+        if (!pastas[indice] || pastas[indice].apps.indexOf(id) < 0) return
+        const resto = pastas[indice].apps.filter(a => a !== id)
+        if (resto.length <= 1) return desfazerPasta(indice)
         fixarDeVolta([id])
-        salvarPastas(pastas.map((p, n) => n === indice ? { nome: p.nome, apps: p.apps.filter(a => a !== id) } : p).filter(p => p.apps.length > 0))
+        salvarPastas(pastas.map((p, n) => n === indice ? { nome: p.nome, apps: resto } : p))
     }
     function alternarFixado(url, fixado) {
         if (fixado ? tarefas.requestRemoveLauncher(url) : tarefas.requestAddLauncher(url)) salvarFixados()
@@ -121,9 +125,10 @@ Tile {
         PlasmaExtras.MenuItem { text: menu.rotulo; icon: "window-pin"; onClicked: menu.acao() }
     }
     // Pega o que for solto nas margens do bloco; em cima de um ícone, quem pega é a área dele.
+    // O aplicativo arrastado para fora de uma pasta também é aceito aqui, sem nada a fazer: quem o tira da pasta é o fim do arraste.
     DropArea {
         anchors.fill: parent
-        keys: ["text/uri-list"]
+        keys: ["text/uri-list", "application/x-trapiche-app"]
         onDropped: evento => raiz.soltou(evento.urls)
     }
 
@@ -273,6 +278,8 @@ Tile {
                     nome: grupo.modelData.nome
                     sobre: toqueGrupo.containsMouse
                     destaque: raiz.alvo === lista.count + grupo.index
+                    arrastavel: true
+                    onLevadoParaFora: aplicativo => Qt.callLater(raiz.tirarDaPasta, grupo.index, aplicativo.id)
                     onMenuDoApp: (aplicativo, celula) => raiz.abrirMenu(celula, "Tirar da pasta", () => raiz.tirarDaPasta(grupo.index, aplicativo.id))
                 }
                 MouseArea {

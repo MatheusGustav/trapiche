@@ -13,8 +13,13 @@ Item {
     property bool destaque: false
     readonly property string pedido: JSON.stringify({ acao: "resolver", ids: ids })
     property var apps: []           // { id, nome, icone, caminho }
+    // Com arrastavel, um aplicativo arrastado para fora do balão sai da pasta: levado é ele, fora diz se já saiu do balão.
+    property bool arrastavel: false
+    property var levado: null
+    property bool fora: false
 
     signal menuDoApp(var app, Item celula)
+    signal levadoParaFora(var app)
 
     width: 48; height: 48
     onPedidoChanged: carregar()
@@ -30,7 +35,30 @@ Item {
         balao.visible = false
     }
 
+    function comecarArrasto(app, imagem) {
+        levado = app
+        fora = false
+        arrastador.Drag.mimeData = { "application/x-trapiche-app": app.id }
+        arrastador.Drag.imageSource = imagem
+        arrastador.Drag.active = true
+    }
+
     Comando { id: executor }
+    // O arraste sai daqui, e não da célula: o balão fecha no fim dele e a célula some junto.
+    Item {
+        id: arrastador
+        Drag.dragType: Drag.Automatic
+        Drag.supportedActions: Qt.MoveAction
+        Drag.hotSpot.x: 24
+        Drag.hotSpot.y: 24
+        Drag.onDragFinished: {
+            const app = pasta.levado
+            pasta.levado = null
+            if (!app || !pasta.fora) return
+            balao.visible = false
+            pasta.levadoParaFora(app)
+        }
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -68,6 +96,7 @@ Item {
         id: balao
         readonly property int colunas: Math.max(2, Math.min(4, pasta.apps.length))
         visualParent: pasta
+        fixo: pasta.levado !== null
         larguraConteudo: colunas * 96
         alturaConteudo: 40 + Math.max(1, Math.ceil(pasta.apps.length / colunas)) * 96
 
@@ -87,6 +116,13 @@ Item {
             wrapMode: Text.WordWrap
             renderType: Text.NativeRendering
         }
+        // O aplicativo arrastado continua na pasta enquanto estiver por cima do balão.
+        DropArea {
+            anchors.fill: parent
+            keys: ["application/x-trapiche-app"]
+            onEntered: pasta.fora = false
+            onExited: pasta.fora = true
+        }
         Item {
             id: grade
             anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: 40; bottom: parent.bottom }
@@ -100,6 +136,7 @@ Item {
                     readonly property real destinoX: (index % balao.colunas) * 96
                     readonly property real destinoY: Math.floor(index / balao.colunas) * 96
                     property real avanco: 0
+                    property url imagem
 
                     width: 96; height: 96
                     x: destinoX + (1 - avanco) * (grade.width / 2 - 48 - destinoX)
@@ -144,11 +181,21 @@ Item {
                         maximumLineCount: 2
                         renderType: Text.NativeRendering
                     }
+                    Item { id: fantasma }
                     MouseArea {
                         id: toque
                         anchors.fill: parent
                         hoverEnabled: true
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        preventStealing: true
+                        drag.target: pasta.arrastavel && (pressedButtons & Qt.LeftButton) ? fantasma : null
+                        drag.threshold: 8
+                        // A imagem do arraste é tirada uma vez por célula: o Qt avisa no log a cada carga dela.
+                        onPressed: mouse => {
+                            if (pasta.arrastavel && mouse.button === Qt.LeftButton && String(celula.imagem) === "")
+                                figura.grabToImage(resultado => celula.imagem = resultado.url)
+                        }
+                        drag.onActiveChanged: if (drag.active) pasta.comecarArrasto(celula.modelData, celula.imagem)
                         onClicked: mouse => mouse.button === Qt.RightButton ? pasta.menuDoApp(celula.modelData, celula) : pasta.abrir(celula.modelData)
                     }
                 }

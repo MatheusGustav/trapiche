@@ -19,7 +19,7 @@ Item {
         const alvo = url
         carregando = true
         pedido.onreadystatechange = () => {
-            if (pedido.readyState !== XMLHttpRequest.DONE || alvo !== http.url) return
+            if (!http || pedido.readyState !== XMLHttpRequest.DONE || alvo !== http.url) return
             carregando = false
             if (pedido.status >= 200 && pedido.status < 300) {
                 try {

@@ -17,6 +17,23 @@ PlasmoidItem {
 
     preferredRepresentation: fullRepresentation
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
+    Plasmoid.contextualActions: [
+        PlasmaCore.Action {
+            text: "Widgets…"
+            icon.name: "view-grid-symbolic"
+            onTriggered: biblioteca.visible = true
+        }
+    ]
+
+    Biblioteca {
+        id: biblioteca
+        visualParent: raiz
+    }
+    Timer {
+        interval: 600
+        running: Plasmoid.configuration.testeAbrir === "biblioteca"
+        onTriggered: biblioteca.visible = true
+    }
 
     function acharPainel() {
         let item = raiz.parent
@@ -124,21 +141,43 @@ PlasmoidItem {
             Repeater {
                 model: Plasmoid.configuration.widgets
 
-                delegate: Loader {
+                delegate: Item {
                     id: vaga
                     required property string modelData
                     required property int index
                     readonly property var registro: Catalogo.achar(modelData)
 
+                    width: carga.width
                     height: linha.height
-                    source: registro ? "widgets/" + registro.arq : ""
                     opacity: 0
                     transform: Translate { id: deslize; y: linha.height * 0.35 }
-                    onLoaded: {
-                        if (item.instancia !== undefined) item.instancia = modelData
-                        entrada.start()
-                        if (modelData === Plasmoid.configuration.testeAbrir && item.clicavel)
-                            item.clicado()
+
+                    Loader {
+                        id: carga
+                        height: parent.height
+                        source: vaga.registro ? "widgets/" + vaga.registro.arq : ""
+                        onLoaded: {
+                            if (item.instancia !== undefined) item.instancia = vaga.modelData
+                            entrada.start()
+                            if (vaga.modelData === Plasmoid.configuration.testeAbrir && item.clicavel)
+                                item.clicado()
+                        }
+                    }
+                    // Com a biblioteca aberta, cada bloco ganha o botão de tirar da dock.
+                    Rectangle {
+                        anchors { right: parent.right; top: parent.top; rightMargin: -5; topMargin: -3 }
+                        width: 20; height: 20; radius: 10
+                        color: Tema.vermelho
+                        visible: scale > 0
+                        scale: biblioteca.visible ? (tirar.pressed ? 0.85 : 1) : 0
+                        Behavior on scale { NumberAnimation { duration: Tema.rapido; easing.type: Easing.OutBack } }
+
+                        Icone { anchors.centerIn: parent; source: "list-remove-symbolic"; tam: 12; cor: "white" }
+                        MouseArea {
+                            id: tirar
+                            anchors { fill: parent; margins: -4 }
+                            onClicked: Plasmoid.configuration.widgets = Array.from(Plasmoid.configuration.widgets).filter((id, n) => n !== vaga.index)
+                        }
                     }
 
                     SequentialAnimation {

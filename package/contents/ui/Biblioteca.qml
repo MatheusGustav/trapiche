@@ -4,6 +4,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents
 import "comp"
 import "catalogo.js" as Catalogo
+import "util.js" as Util
 
 // Biblioteca de widgets: todos os widgets do catálogo, vivos, por categoria. Clicar põe na dock ou tira dela.
 // A entrada "Opções" da lateral troca a grade pelas opções da dock e dos widgets que estão nela.
@@ -144,7 +145,10 @@ Balao {
             MouseArea {
                 id: toqueOrdem
                 anchors.fill: parent
-                onClicked: Plasmoid.configuration.widgets = Catalogo.ordenar(Array.from(biblioteca.naBarra))
+                onClicked: {
+                    Plasmoid.configuration.widgets = Catalogo.ordenar(Array.from(biblioteca.naBarra))
+                    Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "posicoes", {})
+                }
             }
         }
         BotaoRedondo { tam: 30; icone: "window-close-symbolic"; onClicado: biblioteca.visible = false }

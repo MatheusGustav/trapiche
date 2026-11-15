@@ -73,7 +73,7 @@ var itens = [
     { id: "github", nome: "GitHub (não lidas)", cat: "Desenvolvimento", arq: "GitHubNaoLidas.qml" }
 ]
 
-// Categorias na ordem padrão da dock, da esquerda para a direita: aplicativos primeiro, data e hora no fim.
+// Categorias na ordem padrão da lista da dock: aplicativos primeiro, data e hora no fim.
 var categorias = ["Aplicativos e pastas", "Mídia", "Clima", "Mercado", "IA", "Desenvolvimento", "Produtividade", "Sistema", "Data e hora"]
 
 // Widgets que saíram do catálogo e o que fica no lugar de cada um na dock e nas opções de quem já os usava.
@@ -103,15 +103,10 @@ function achar(id) {
     return null
 }
 
-// Seção da dock em que a entrada fica: 1 no canto direito (data e hora), 0 no esquerdo (todo o resto).
+// Lado da dock em que a entrada fica enquanto não tem posição gravada: 1 no canto direito (data e hora), 0 no esquerdo (todo o resto).
 function secao(id) {
     const item = achar(id)
     return item && item.cat === "Data e hora" ? 1 : 0
-}
-
-// A lista com as entradas de cada seção juntas, sem mudar a ordem dentro da seção.
-function porSecao(lista) {
-    return lista.filter(id => secao(id) === 0).concat(lista.filter(id => secao(id) === 1))
 }
 
 // Nome de uma entrada da dock: o do widget, com o número da cópia quando houver.

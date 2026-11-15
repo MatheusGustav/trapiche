@@ -5,13 +5,14 @@ import org.kde.plasma.plasmoid
 import "comp"
 import "util.js" as Util
 
-// Notas adesivas guardadas atrás da dock: de cada uma só aparece um tracinho colorido em cima do vidro, no canto esquerdo.
+// Notas adesivas guardadas atrás da dock: de cada uma só aparece um tracinho colorido em cima do vidro, a partir do começo da dock.
 // Passar o mouse levanta o tracinho; clicar faz a nota subir de trás da barra. O último tracinho, com "+", cria uma nota.
 Item {
     id: adesivos
 
     property Item painel: null      // painel do Plasma, onde os tracinhos são desenhados
     property Item molde: null       // item do painel com a geometria do vidro
+    property real inicio: 0         // onde a fileira começa, na largura da dock
 
     readonly property var cores: [Tema.amarelo, Tema.laranja, Tema.verde, Tema.ciano, Tema.roxo, Tema.vermelho]
     // { cor: índice em cores, texto }
@@ -21,8 +22,15 @@ Item {
     // Nota que acabou de fechar: o clique na ponta dela pode chegar depois de o balão já ter fechado sozinho, e não a reabre.
     property int recemFechada: -1
 
-    readonly property int larguraPonta: 64
-    readonly property int larguraMais: 26
+    readonly property int larguraPonta: 120
+    readonly property int larguraMais: 30
+    // Começo da dock dentro do painel. Refeito quando a dock ou o painel mudam de tamanho.
+    readonly property real origem: {
+        inicio; parent.width
+        if (!painel || !molde) return 0
+        painel.width; molde.x
+        return parent.mapToItem(painel, 0, 0).x
+    }
     readonly property int vao: 8
     // Espaço que sobra na janela do painel acima do vidro: é o quanto um tracinho consegue aparecer.
     readonly property real folga: molde ? molde.y : 0
@@ -74,12 +82,12 @@ Item {
         if (indice >= 0 && notas[indice] && notas[indice].texto.trim() === "") salvar(notas.filter((n, k) => k !== indice))
     }
 
-    // Fileira no painel, a partir de onde a borda de cima do vidro fica reta.
+    // Fileira no painel, em cima do vidro.
     Item {
         parent: adesivos.painel
         visible: adesivos.visible && adesivos.folga > 0
         z: 1
-        x: adesivos.molde ? adesivos.molde.x + 26 : 0
+        x: adesivos.origem + adesivos.inicio
 
         // Só o que está acima do vidro aparece: o resto da nota fica escondido atrás da barra.
         Item {

@@ -139,6 +139,7 @@ PlasmoidItem {
             visible: doca.emPainel && raiz.moldeDoVidro !== null
             painel: raiz.painel
             molde: raiz.moldeDoVidro
+            inicio: linha.inicios[0]
         }
 
         Loader {

@@ -5,7 +5,7 @@
     <kcfgfile name=""/>
     <group name="General">
         <entry name="widgets" type="StringList">
-            <default>apps,pasta,tocando,cpu,ram,bateria-anel,relogio-flip</default>
+            <default>apps,pasta,tocando,cpu,ram,bateria-anel,relogio-digital</default>
         </entry>
         <entry name="opcoes" type="String">
             <default>{}</default>

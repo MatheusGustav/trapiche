@@ -38,6 +38,11 @@ function gravarOpcao(json, id, chave, valor) {
     return JSON.stringify(tudo)
 }
 
+// Hora como o relógio mostra: 0 a 23, ou 1 a 12 no formato de 12 horas.
+function horaDoRelogio(data, h24) {
+    return h24 ? data.getHours() : (data.getHours() % 12 || 12)
+}
+
 function dois(n) {
     return (n < 10 ? "0" : "") + Math.floor(n)
 }

@@ -151,8 +151,9 @@ PlasmoidItem {
         ListModel { id: blocos }
         function sincronizar() {
             const lista = Array.from(Plasmoid.configuration.widgets)
-            const alvo = Catalogo.porSecao(lista)
-            // Lista gravada antes das seções, ou reordenada na configuração: passa a ficar com cada seção junta.
+            const alvo = Catalogo.porSecao(lista.map(Catalogo.atual).filter((id, n, todos) => todos.indexOf(id) === n))
+            // Lista gravada antes das seções, reordenada na configuração ou com widget que saiu do catálogo:
+            // passa a ficar com cada seção junta e com o widget que entrou no lugar.
             if (alvo.join() !== lista.join()) Plasmoid.configuration.widgets = alvo
             for (let i = blocos.count - 1; i >= 0; i--)
                 if (alvo.indexOf(blocos.get(i).wid) < 0) blocos.remove(i)
@@ -166,7 +167,11 @@ PlasmoidItem {
             if (blocos.count > alvo.length) blocos.remove(alvo.length, blocos.count - alvo.length)
             arrumar()
         }
-        Component.onCompleted: sincronizar()
+        Component.onCompleted: {
+            const opcoes = Catalogo.opcoesAtuais(Plasmoid.configuration.opcoes)
+            if (opcoes !== Plasmoid.configuration.opcoes) Plasmoid.configuration.opcoes = opcoes
+            sincronizar()
+        }
         Connections {
             target: Plasmoid.configuration
             function onWidgetsChanged() { doca.sincronizar() }

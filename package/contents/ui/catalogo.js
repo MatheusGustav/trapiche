@@ -43,9 +43,12 @@ var itens = [
     { id: "timer", nome: "Timer", cat: "Produtividade", arq: "Timer.qml",
       op: [{ k: "minutos", r: "Minutos", t: "numero", p: 1 }] },
     { id: "cronometro", nome: "Cronômetro", cat: "Produtividade", arq: "Cronometro.qml" },
-    { id: "relogio-flip", nome: "Relógio de fichas", cat: "Data e hora", arq: "RelogioFlip.qml",
+    { id: "relogio-digital", nome: "Relógio digital", cat: "Data e hora", arq: "RelogioDigital.qml",
       op: [{ k: "h24", r: "Formato 24 horas", t: "bool", p: true }] },
+    { id: "relogio-empilhado", nome: "Relógio digital (empilhado)", cat: "Data e hora", arq: "RelogioEmpilhado.qml", opDe: "relogio-digital" },
+    { id: "relogio-anel", nome: "Relógio (anel)", cat: "Data e hora", arq: "RelogioAnel.qml", opDe: "relogio-digital" },
     { id: "relogio-analogico", nome: "Relógio analógico", cat: "Data e hora", arq: "RelogioAnalogico.qml" },
+    { id: "relogio-minimalista", nome: "Relógio analógico (minimalista)", cat: "Data e hora", arq: "RelogioMinimalista.qml" },
     { id: "relogios-mundo", nome: "Relógios do mundo", cat: "Data e hora", arq: "RelogiosMundo.qml",
       op: [{ k: "cidades", r: "Cidades (SIGLA:Fuso, separadas por vírgula)", t: "texto",
              p: "NYC:America/New_York,LON:Europe/London,TYO:Asia/Tokyo" }] },
@@ -72,6 +75,26 @@ var itens = [
 
 // Categorias na ordem padrão da dock, da esquerda para a direita: aplicativos primeiro, data e hora no fim.
 var categorias = ["Aplicativos e pastas", "Mídia", "Clima", "Mercado", "IA", "Desenvolvimento", "Produtividade", "Sistema", "Data e hora"]
+
+// Widgets que saíram do catálogo e o que fica no lugar de cada um na dock e nas opções de quem já os usava.
+var trocados = { "relogio-flip": "relogio-digital" }
+
+function atual(id) {
+    return trocados[id] || id
+}
+
+function opcoesAtuais(json) {
+    let tudo = {}
+    try { tudo = JSON.parse(json || "{}") } catch (e) { return json }
+    let mudou = false
+    for (const velho in trocados) {
+        if (tudo[velho] === undefined) continue
+        if (tudo[trocados[velho]] === undefined) tudo[trocados[velho]] = tudo[velho]
+        delete tudo[velho]
+        mudou = true
+    }
+    return mudou ? JSON.stringify(tudo) : json
+}
 
 function achar(id) {
     const base = String(id).split(":")[0]

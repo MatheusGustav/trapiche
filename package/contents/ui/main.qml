@@ -135,6 +135,13 @@ PlasmoidItem {
 
         HoverHandler { onHoveredChanged: if (!hovered) raiz.chamada = false }
 
+        Adesivos {
+            visible: doca.emPainel && raiz.moldeDoVidro !== null
+            painel: raiz.painel
+            molde: raiz.moldeDoVidro
+            fim: linha.inicios[1] - (linha.divisaDoMeio ? linha.divisa : 0)
+        }
+
         Loader {
             active: Plasmoid.configuration.widgets.indexOf("tempo-de-tela") >= 0 || Plasmoid.configuration.widgets.indexOf("linha-do-dia") >= 0
             source: "dados/Rastreador.qml"

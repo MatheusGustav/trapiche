@@ -17,7 +17,7 @@ Tile {
         anchors.centerIn: parent
         ids: raiz.op.apps
         nome: raiz.op.nome
-        textoVazio: "Escolha os aplicativos em Configurar Trapiche, aba Opções."
+        textoVazio: "Escolha os aplicativos em Widgets…, Opções."
         sobre: raiz.sobre
     }
 }

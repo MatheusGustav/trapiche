@@ -38,6 +38,9 @@ PlasmoidItem {
         restoreMode: Binding.RestoreBindingOrValue
     }
 
+    // Tudo o que se configura fica na biblioteca; a janela de configuração do Plasma não tem o que mostrar.
+    Component.onCompleted: Plasmoid.internalAction("configure").visible = false
+
     Biblioteca {
         id: biblioteca
         visualParent: raiz

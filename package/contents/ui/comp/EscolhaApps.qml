@@ -1,7 +1,7 @@
 import QtQuick
-import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
 import "../dados"
 import "../util.js" as Util
 
@@ -42,13 +42,13 @@ ColumnLayout {
             readonly property var dados: escolha.app(modelData)
             Layout.fillWidth: true
             Kirigami.Icon { source: escolhido.dados.icone; implicitWidth: Kirigami.Units.iconSizes.smallMedium; implicitHeight: Kirigami.Units.iconSizes.smallMedium }
-            QQC2.Label { Layout.fillWidth: true; text: escolhido.dados.nome; elide: Text.ElideRight }
-            QQC2.ToolButton { icon.name: "go-up"; enabled: escolhido.index > 0; onClicked: escolha.mover(escolhido.index, -1) }
-            QQC2.ToolButton { icon.name: "go-down"; enabled: escolhido.index < escolha.ids.length - 1; onClicked: escolha.mover(escolhido.index, 1) }
-            QQC2.ToolButton { icon.name: "list-remove"; onClicked: escolha.mudou(escolha.ids.filter((id, n) => n !== escolhido.index)) }
+            PlasmaComponents.Label { Layout.fillWidth: true; text: escolhido.dados.nome; elide: Text.ElideRight }
+            PlasmaComponents.ToolButton { icon.name: "go-up"; enabled: escolhido.index > 0; onClicked: escolha.mover(escolhido.index, -1) }
+            PlasmaComponents.ToolButton { icon.name: "go-down"; enabled: escolhido.index < escolha.ids.length - 1; onClicked: escolha.mover(escolhido.index, 1) }
+            PlasmaComponents.ToolButton { icon.name: "list-remove"; onClicked: escolha.mudou(escolha.ids.filter((id, n) => n !== escolhido.index)) }
         }
     }
-    QQC2.TextField {
+    PlasmaComponents.TextField {
         id: busca
         Layout.fillWidth: true
         Layout.topMargin: Kirigami.Units.smallSpacing
@@ -61,8 +61,8 @@ ColumnLayout {
             required property var modelData
             Layout.fillWidth: true
             Kirigami.Icon { source: resultado.modelData.icone; implicitWidth: Kirigami.Units.iconSizes.smallMedium; implicitHeight: Kirigami.Units.iconSizes.smallMedium }
-            QQC2.Label { Layout.fillWidth: true; text: resultado.modelData.nome; elide: Text.ElideRight; opacity: 0.8 }
-            QQC2.ToolButton { icon.name: "list-add"; onClicked: escolha.mudou(escolha.ids.concat([resultado.modelData.id])) }
+            PlasmaComponents.Label { Layout.fillWidth: true; text: resultado.modelData.nome; elide: Text.ElideRight; opacity: 0.8 }
+            PlasmaComponents.ToolButton { icon.name: "list-add"; onClicked: escolha.mudou(escolha.ids.concat([resultado.modelData.id])) }
         }
     }
 }

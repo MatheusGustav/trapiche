@@ -6,10 +6,12 @@ import "comp"
 import "catalogo.js" as Catalogo
 
 // Biblioteca de widgets: todos os widgets do catálogo, vivos, por categoria. Clicar põe na dock ou tira dela.
+// A entrada "Opções" da lateral troca a grade pelas opções da dock e dos widgets que estão nela.
 Balao {
     id: biblioteca
 
     property string categoria: ""           // vazia = todas
+    property bool emOpcoes: false
     readonly property var naBarra: Plasmoid.configuration.widgets
     readonly property string busca: simples(campoBusca.text.trim())
     function simples(texto) { return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") }
@@ -43,6 +45,7 @@ Balao {
             id: campoBusca
             width: parent.width
             placeholderText: "Buscar widgets"
+            onTextEdited: biblioteca.emOpcoes = false
             Keys.onEscapePressed: text !== "" ? text = "" : biblioteca.visible = false
         }
         Column {
@@ -53,49 +56,65 @@ Balao {
             Repeater {
                 model: [""].concat(Catalogo.categorias)
 
-                Rectangle {
-                    id: linha
+                Entrada {
                     required property string modelData
-                    readonly property bool escolhida: biblioteca.categoria === modelData
-
-                    width: lateral.width
-                    height: 34
-                    radius: 10
-                    color: escolhida ? Tema.azul : (toque.containsMouse ? Tema.botao : "transparent")
-                    Behavior on color { ColorAnimation { duration: Tema.rapido } }
-
-                    Texto {
-                        anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
-                        text: linha.modelData === "" ? "Todos os widgets" : linha.modelData
-                        tam: 13
-                        forte: linha.escolhida
-                        color: linha.escolhida ? "white" : Tema.texto
-                        renderType: Text.NativeRendering
-                    }
-                    MouseArea {
-                        id: toque
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: {
-                            biblioteca.categoria = linha.modelData
-                            rolagem.contentY = 0
-                        }
+                    rotulo: modelData === "" ? "Todos os widgets" : modelData
+                    escolhida: !biblioteca.emOpcoes && biblioteca.categoria === modelData
+                    onClicado: {
+                        biblioteca.emOpcoes = false
+                        biblioteca.categoria = modelData
+                        rolagem.contentY = 0
                     }
                 }
             }
+        }
+        Entrada {
+            anchors.bottom: parent.bottom
+            rotulo: "Opções"
+            escolhida: biblioteca.emOpcoes
+            onClicado: biblioteca.emOpcoes = true
+        }
+    }
+
+    component Entrada: Rectangle {
+        id: entrada
+        property string rotulo
+        property bool escolhida: false
+        signal clicado()
+
+        width: parent.width
+        height: 34
+        radius: 10
+        color: escolhida ? Tema.azul : (toque.containsMouse ? Tema.botao : "transparent")
+        Behavior on color { ColorAnimation { duration: Tema.rapido } }
+
+        Texto {
+            anchors { fill: parent; leftMargin: 12; rightMargin: 12 }
+            text: entrada.rotulo
+            tam: 13
+            forte: entrada.escolhida
+            color: entrada.escolhida ? "white" : Tema.texto
+            renderType: Text.NativeRendering
+        }
+        MouseArea {
+            id: toque
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: entrada.clicado()
         }
     }
 
     Texto {
         id: titulo
         x: lateral.x + lateral.width + 22; y: 10; height: 36
-        text: biblioteca.categoria === "" ? "Todos os widgets" : biblioteca.categoria
+        text: biblioteca.emOpcoes ? "Opções" : (biblioteca.categoria === "" ? "Todos os widgets" : biblioteca.categoria)
         tam: 20
         forte: true
         renderType: Text.NativeRendering
     }
     Texto {
         anchors { left: titulo.right; leftMargin: 12; baseline: titulo.baseline }
+        visible: !biblioteca.emOpcoes
         text: Catalogo.itens.length + " widgets · " + biblioteca.naBarra.length + " na dock"
         tam: 12
         fraco: true
@@ -107,6 +126,7 @@ Balao {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
+            visible: !biblioteca.emOpcoes
             width: rotuloOrdem.implicitWidth + 24
             height: 30
             radius: 15
@@ -130,8 +150,15 @@ Balao {
         BotaoRedondo { tam: 30; icone: "window-close-symbolic"; onClicado: biblioteca.visible = false }
     }
 
+    // As opções são montadas a cada abertura, com os valores daquele momento.
+    Loader {
+        anchors.fill: rolagem
+        active: biblioteca.visible && biblioteca.emOpcoes
+        sourceComponent: Opcoes { naBarra: biblioteca.naBarra }
+    }
     Flickable {
         id: rolagem
+        visible: !biblioteca.emOpcoes
         anchors { left: titulo.left; right: parent.right; top: titulo.bottom; bottom: parent.bottom; topMargin: 8; rightMargin: 4; bottomMargin: 8 }
         contentHeight: conteudo.height
         clip: true

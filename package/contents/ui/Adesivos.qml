@@ -14,7 +14,9 @@ Item {
     property Item molde: null       // item do painel com a geometria do vidro
     property real inicio: 0         // onde a fileira começa, na largura da dock
 
-    readonly property var cores: [Tema.amarelo, Tema.laranja, Tema.verde, Tema.ciano, Tema.roxo, Tema.vermelho]
+    // Mostarda, laranja, verde, azul, roxo e vermelho, todos escuros; o texto da nota é claro.
+    readonly property var cores: ["#946c12", "#b3530f", "#1e6e4a", "#1f4f8f", "#5c3a8a", "#9e2a2b"]
+    readonly property color tinta: "#f5f5f7"
     // { cor: índice em cores, texto }
     readonly property var notas: Util.ler(Plasmoid.configuration.dados, "adesivos", [])
     property int aberta: -1
@@ -23,7 +25,7 @@ Item {
     // Nota que acabou de fechar: o clique na aba dela pode chegar depois de o balão já ter fechado sozinho, e não a reabre.
     property int recemFechada: -1
 
-    readonly property int larguraAba: 120
+    readonly property int larguraAba: 140
     // Começo da dock dentro do painel. Refeito quando a dock ou o painel mudam de tamanho.
     readonly property real origem: {
         inicio; parent.width
@@ -34,6 +36,9 @@ Item {
     readonly property int vao: 8
     readonly property int alturaAba: 16
     readonly property int alturaLevantada: 22
+    // A nota aberta tem a largura de duas abas.
+    readonly property int larguraNota: 2 * larguraAba + vao
+    readonly property int alturaNota: 140
 
     function salvar(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "adesivos", nova) }
     function criar() {
@@ -58,7 +63,7 @@ Item {
         }
         aberta = indice
         editor.text = notas[indice].texto
-        balao.visualParent = abas.itemAt(indice)
+        balao.visualParent = abas.itemAt(indice).ancora
         descer.stop()
         cartao.y = caixa.height
         balao.visible = true
@@ -131,6 +136,10 @@ Item {
                     onExited: if (adesivos.sobre === index) adesivos.sobre = -1
                     onClicked: nova ? adesivos.criar() : adesivos.abrir(index)
 
+                    // O balão se centra neste item: a nota sobe com a borda esquerda na da aba.
+                    property alias ancora: ancora
+                    Item { id: ancora; width: adesivos.larguraNota; height: parent.height }
+
                     // O que passa do fim da janela fica escondido, como se estivesse atrás da barra.
                     Rectangle {
                         y: parent.height - aba.altura
@@ -155,8 +164,8 @@ Item {
     Balao {
         id: balao
         backgroundHints: PlasmaCore.Dialog.NoBackground
-        larguraConteudo: 250
-        alturaConteudo: 246
+        larguraConteudo: adesivos.larguraNota
+        alturaConteudo: adesivos.alturaNota + 16
         onVisibleChanged: if (!visible) adesivos.fechou()
 
         Item {
@@ -170,23 +179,23 @@ Item {
                     ? adesivos.cores[adesivos.notas[adesivos.aberta].cor % adesivos.cores.length] : adesivos.cores[0]
                 y: caixa.height
                 width: parent.width
-                height: 230
+                height: adesivos.alturaNota
                 radius: 4
                 color: papel
                 Behavior on color { ColorAnimation { duration: Tema.rapido } }
 
-                Rectangle { width: parent.width; height: 26; radius: 4; color: Qt.darker(cartao.papel, 1.08) }
+                Rectangle { width: parent.width; height: 14; radius: 4; color: Qt.darker(cartao.papel, 1.15) }
                 Flickable {
                     id: rolagem
-                    anchors { fill: parent; topMargin: 30; bottomMargin: 34; leftMargin: 6; rightMargin: 6 }
+                    anchors { fill: parent; topMargin: 16; bottomMargin: 34; leftMargin: 6; rightMargin: 6 }
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     QQC2.TextArea.flickable: QQC2.TextArea {
                         id: editor
                         background: null
-                        color: "#1c1c1e"
+                        color: adesivos.tinta
                         placeholderText: "Escreva aqui"
-                        placeholderTextColor: "#801c1c1e"
+                        placeholderTextColor: Qt.alpha(adesivos.tinta, 0.5)
                         wrapMode: TextEdit.Wrap
                         onTextChanged: if (balao.visible) gravacao.restart()
                         Keys.onEscapePressed: balao.visible = false
@@ -204,7 +213,7 @@ Item {
                             width: 14; height: 14; radius: 7
                             color: modelData
                             border.width: 1.5
-                            border.color: "#801c1c1e"
+                            border.color: Qt.alpha(adesivos.tinta, 0.7)
                             MouseArea { anchors { fill: parent; margins: -3 } onClicked: adesivos.pintar(parent.index) }
                         }
                     }
@@ -213,7 +222,7 @@ Item {
                     anchors { right: parent.right; rightMargin: 12; bottom: parent.bottom; bottomMargin: 8 }
                     source: "edit-delete-symbolic"
                     tam: 18
-                    cor: "#1c1c1e"
+                    cor: adesivos.tinta
                     MouseArea { anchors { fill: parent; margins: -4 } onClicked: adesivos.apagar() }
                 }
             }

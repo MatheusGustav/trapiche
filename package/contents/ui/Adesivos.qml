@@ -23,7 +23,6 @@ Item {
     property int recemFechada: -1
 
     readonly property int larguraPonta: 120
-    readonly property int larguraMais: 30
     // Começo da dock dentro do painel. Refeito quando a dock ou o painel mudam de tamanho.
     readonly property real origem: {
         inicio; parent.width
@@ -106,7 +105,7 @@ Item {
 
                     x: index * (adesivos.larguraPonta + adesivos.vao)
                     y: adesivos.folga - Math.min(adesivos.folga, levantada ? 8 : 5)
-                    width: nova ? adesivos.larguraMais : adesivos.larguraPonta
+                    width: adesivos.larguraPonta
                     height: 12
                     radius: 3
                     color: nova ? (Tema.escuro ? "#73ffffff" : "#73000000") : adesivos.cores[adesivos.notas[index].cor % adesivos.cores.length]
@@ -117,21 +116,29 @@ Item {
                 }
             }
         }
-        // O toque desce um pouco além do vidro, até onde os blocos começam.
+        // O toque desce além do vidro, por cima da beirada dos blocos: só a faixa acima dele seria difícil de acertar.
         Repeater {
             id: toques
             model: adesivos.notas.length + 1
 
-            MouseArea {
+            PlasmaCore.ToolTipArea {
+                id: toque
                 required property int index
+                readonly property bool nova: index === adesivos.notas.length
 
                 x: index * (adesivos.larguraPonta + adesivos.vao)
-                width: index === adesivos.notas.length ? adesivos.larguraMais : adesivos.larguraPonta
-                height: adesivos.folga + 4
-                hoverEnabled: true
-                onEntered: adesivos.sobre = index
-                onExited: if (adesivos.sobre === index) adesivos.sobre = -1
-                onClicked: index === adesivos.notas.length ? adesivos.criar() : adesivos.abrir(index)
+                width: adesivos.larguraPonta
+                height: adesivos.folga + 10
+                active: !balao.visible
+                mainText: nova ? "Nova nota" : adesivos.notas[index].texto.trim().split("\n")[0]
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: adesivos.sobre = toque.index
+                    onExited: if (adesivos.sobre === toque.index) adesivos.sobre = -1
+                    onClicked: toque.nova ? adesivos.criar() : adesivos.abrir(toque.index)
+                }
             }
         }
     }

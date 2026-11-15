@@ -219,6 +219,7 @@ PlasmoidItem {
                     property point apertou
                     onPressed: mouse => apertou = Qt.point(mouse.x, mouse.y)
                     onPressAndHold: mouse => {
+                        if (carga.item && carga.item.arrasteProprio === true) return
                         if (Math.abs(mouse.x - apertou.x) < 8 && Math.abs(mouse.y - apertou.y) < 8) doca.pegar(vaga)
                     }
                     // Soltar longe da dock devolve o bloco ao lugar de antes.

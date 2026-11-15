@@ -16,6 +16,8 @@ Tile {
 
     // Pastas de aplicativos, criadas ao arrastar um ícone para cima de outro: { nome, apps: [ids de code/apps.py] }.
     readonly property var pastas: Util.ler(Plasmoid.configuration.dados, "pastasApps", [])
+    // Com o clique num ícone de aplicativo, quem arrasta é o ícone: a dock não solta o bloco inteiro.
+    property bool arrasteProprio: false
     // Ícone de aplicativo sendo arrastado (-1 = nenhum), o centro dele na linha e a vaga em que cairia.
     property int levado: -1
     property real levadoX: 0
@@ -190,6 +192,7 @@ Tile {
                     property real inicio: 0
                     property bool arrastou: false
                     function largar(valendo) {
+                        raiz.arrasteProprio = false
                         if (raiz.levado !== app.index) return
                         const para = raiz.alvo
                         raiz.levado = -1
@@ -199,6 +202,7 @@ Tile {
                     onPressed: mouse => {
                         inicio = mouse.x
                         arrastou = false
+                        raiz.arrasteProprio = mouse.button === Qt.LeftButton && app.ident !== ""
                     }
                     onPositionChanged: mouse => {
                         if (!(mouse.buttons & Qt.LeftButton) || app.ident === "") return

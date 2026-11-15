@@ -14,6 +14,8 @@ PlasmoidItem {
     property Item painel: null
     property var fundosDoPainel: []
     readonly property Item moldeDoVidro: fundosDoPainel.length > 0 ? fundosDoPainel[0] : null
+    // 1 com o painel flutuando, 0 com ele encostado na borda da tela.
+    readonly property real flutua: painel ? painel.floatingness : 1
 
     preferredRepresentation: fullRepresentation
     Plasmoid.backgroundHints: PlasmaCore.Types.NoBackground
@@ -84,7 +86,7 @@ PlasmoidItem {
         target: raiz.painel
         property: "panelMask"
         value: mascara.mask
-        when: raiz.moldeDoVidro !== null
+        when: raiz.moldeDoVidro !== null && raiz.flutua === 1
         restoreMode: Binding.RestoreBindingOrValue
     }
 
@@ -101,13 +103,13 @@ PlasmoidItem {
         color: Tema.vidro
         border.color: Tema.vidroBorda
         border.width: 1
-        radius: 24      // o mesmo raio de images/mascara-vidro.svg
+        radius: 24 * raiz.flutua    // flutuando, o mesmo raio de images/mascara-vidro.svg; encostado na borda, reto
 
         Rectangle {
             anchors { left: parent.left; right: parent.right; top: parent.top; margins: 1 }
             height: parent.height * 0.5
-            topLeftRadius: vidro.radius - 1
-            topRightRadius: vidro.radius - 1
+            topLeftRadius: Math.max(0, vidro.radius - 1)
+            topRightRadius: Math.max(0, vidro.radius - 1)
             gradient: Gradient {
                 GradientStop { position: 0; color: Tema.brilho }
                 GradientStop { position: 1; color: "transparent" }
@@ -121,9 +123,10 @@ PlasmoidItem {
         readonly property bool emPainel: raiz.emPainel
         readonly property real alturaTile: emPainel ? height : 77
 
+        // Num painel que ocupa a tela inteira, a dock fica com a largura que sobra e os blocos vão para o meio.
         Layout.minimumWidth: linha.width
         Layout.preferredWidth: linha.width
-        Layout.maximumWidth: emPainel ? linha.width : -1
+        Layout.fillWidth: true
         Layout.minimumHeight: emPainel ? -1 : 77
         Layout.preferredHeight: emPainel ? -1 : 77
 
@@ -186,7 +189,7 @@ PlasmoidItem {
 
         Row {
             id: linha
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.centerIn: parent
             height: doca.alturaTile
             spacing: Math.round(8 * height / 77)
             move: Transition { NumberAnimation { properties: "x"; duration: 220; easing.type: Easing.OutCubic } }

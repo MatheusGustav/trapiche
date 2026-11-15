@@ -5,7 +5,7 @@ import org.kde.plasma.plasmoid
 import "comp"
 import "util.js" as Util
 
-// Notas adesivas guardadas atrás da dock: de cada uma só aparece um tracinho colorido em cima do vidro, a partir do começo da dock.
+// Notas adesivas guardadas atrás da dock: de cada uma só aparece um tracinho colorido preso à borda de cima do vidro, a partir do começo da dock.
 // Passar o mouse levanta o tracinho; clicar faz a nota subir de trás da barra. O último tracinho, com "+", cria uma nota.
 Item {
     id: adesivos
@@ -31,8 +31,10 @@ Item {
         return parent.mapToItem(painel, 0, 0).x
     }
     readonly property int vao: 8
-    // Espaço que sobra na janela do painel acima do vidro: é o quanto um tracinho consegue aparecer.
+    // Espaço que sobra na janela do painel acima do vidro: é o quanto um tracinho consegue passar da borda.
     readonly property real folga: molde ? molde.y : 0
+    // Quanto o tracinho desce por cima do vidro e da beirada dos blocos.
+    readonly property int descida: 8
 
     function salvar(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "adesivos", nova) }
     function criar() {
@@ -81,42 +83,41 @@ Item {
         if (indice >= 0 && notas[indice] && notas[indice].texto.trim() === "") salvar(notas.filter((n, k) => k !== indice))
     }
 
-    // Fileira no painel, em cima do vidro.
+    // Fileira no painel, por cima do vidro.
     Item {
         parent: adesivos.painel
-        visible: adesivos.visible && adesivos.folga > 0
+        visible: adesivos.visible
         z: 1
         x: adesivos.origem + adesivos.inicio
 
-        // Só o que está acima do vidro aparece: o resto da nota fica escondido atrás da barra.
-        Item {
-            width: (adesivos.notas.length + 1) * (adesivos.larguraPonta + adesivos.vao)
-            height: adesivos.folga
-            clip: true
+        Repeater {
+            model: adesivos.notas.length + 1
 
-            Repeater {
-                model: adesivos.notas.length + 1
+            Rectangle {
+                id: ponta
+                required property int index
+                readonly property bool nova: index === adesivos.notas.length
+                // Quanto passa da borda do vidro: mais com o mouse em cima ou com a nota aberta.
+                property real sobra: Math.min(adesivos.folga, adesivos.sobre === index || adesivos.aberta === index ? 8 : 5)
+                Behavior on sobra { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
 
-                Rectangle {
-                    id: ponta
-                    required property int index
-                    readonly property bool nova: index === adesivos.notas.length
-                    readonly property bool levantada: adesivos.sobre === index || adesivos.aberta === index
+                x: index * (adesivos.larguraPonta + adesivos.vao)
+                y: adesivos.folga - sobra
+                width: adesivos.larguraPonta
+                height: sobra + adesivos.descida
+                radius: 4
+                color: nova ? (Tema.escuro ? "#8cffffff" : "#8c000000") : adesivos.cores[adesivos.notas[index].cor % adesivos.cores.length]
 
-                    x: index * (adesivos.larguraPonta + adesivos.vao)
-                    y: adesivos.folga - Math.min(adesivos.folga, levantada ? 8 : 5)
-                    width: adesivos.larguraPonta
-                    height: 12
-                    radius: 3
-                    color: nova ? (Tema.escuro ? "#73ffffff" : "#73000000") : adesivos.cores[adesivos.notas[index].cor % adesivos.cores.length]
-                    Behavior on y { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
-
-                    Rectangle { visible: ponta.nova; anchors.horizontalCenter: parent.horizontalCenter; y: 3.25; width: 7; height: 1.5; color: Tema.escuro ? "#1c1c1e" : "white" }
-                    Rectangle { visible: ponta.nova; anchors.horizontalCenter: parent.horizontalCenter; y: 0.5; width: 1.5; height: 7; color: Tema.escuro ? "#1c1c1e" : "white" }
+                Icone {
+                    anchors.centerIn: parent
+                    visible: ponta.nova
+                    source: "list-add-symbolic"
+                    tam: 10
+                    cor: Tema.escuro ? "#1c1c1e" : "white"
                 }
             }
         }
-        // O toque desce além do vidro, por cima da beirada dos blocos: só a faixa acima dele seria difícil de acertar.
+        // O toque cobre o tracinho inteiro, levantado.
         Repeater {
             id: toques
             model: adesivos.notas.length + 1
@@ -128,7 +129,7 @@ Item {
 
                 x: index * (adesivos.larguraPonta + adesivos.vao)
                 width: adesivos.larguraPonta
-                height: adesivos.folga + 10
+                height: adesivos.folga + adesivos.descida
                 active: !balao.visible
                 mainText: nova ? "Nova nota" : adesivos.notas[index].texto.trim().split("\n")[0]
 

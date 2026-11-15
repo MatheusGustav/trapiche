@@ -14,7 +14,7 @@ Tile {
     // Arquivos e pastas soltos na dock: { url, pasta }.
     readonly property var atalhos: Util.ler(Plasmoid.configuration.dados, "atalhos", [])
 
-    largura: Math.max(77, (lista.count + atalhos.length) * 85 - 8)
+    largura: Math.max(77, 10 + (lista.count + atalhos.length) * 72)
     semFundo: true
 
     function salvarFixados() {
@@ -56,28 +56,17 @@ Tile {
         menu.openRelative()
     }
 
-    // Cada ícone fica num quadro do tamanho e com a cara de um bloco da dock.
-    component Quadro: Rectangle {
+    // Área de cada ícone: solto, sem fundo, cresce ao passar o mouse.
+    component Figura: Item {
         property bool sobre: false
         property bool apertado: false
         property real salto: 0
 
-        y: salto
-        width: 77; height: 77; radius: 24
-        color: Tema.tile
-        border.color: Tema.borda
-        scale: apertado ? 0.94 : (sobre ? 1.05 : 1)
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: 5 + salto
+        width: 62; height: 62
+        scale: apertado ? 0.88 : (sobre ? 1.15 : 1)
         Behavior on scale { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
-
-        Rectangle {
-            anchors { left: parent.left; right: parent.right; top: parent.top; margins: 1 }
-            height: parent.height / 2
-            radius: 23
-            gradient: Gradient {
-                GradientStop { position: 0; color: Tema.brilho }
-                GradientStop { position: 1; color: "transparent" }
-            }
-        }
     }
 
     Comando { id: executor }
@@ -109,7 +98,6 @@ Tile {
 
     Row {
         anchors.centerIn: parent
-        spacing: 8
         Repeater {
             id: lista
             model: tarefas
@@ -122,27 +110,26 @@ Tile {
                 readonly property bool aberto: model.IsWindow === true || model.IsGroupParent === true
                 readonly property bool ativo: model.IsActive === true
 
-                width: 77; height: 77
+                width: 72; height: 77
 
-                Quadro {
-                    id: quadro
+                Figura {
+                    id: figura
                     sobre: toque.containsMouse || soltura.containsDrag
                     apertado: toque.pressed
 
                     Kirigami.Icon {
-                        anchors.centerIn: parent
-                        width: 46; height: 46
+                        anchors.fill: parent
                         source: app.model.decoration
                     }
                     SequentialAnimation {
                         id: pulo
                         loops: 2
-                        NumberAnimation { target: quadro; property: "salto"; to: -10; duration: 190; easing.type: Easing.OutQuad }
-                        NumberAnimation { target: quadro; property: "salto"; to: 0; duration: 260; easing.type: Easing.OutBounce }
+                        NumberAnimation { target: figura; property: "salto"; to: -10; duration: 190; easing.type: Easing.OutQuad }
+                        NumberAnimation { target: figura; property: "salto"; to: 0; duration: 260; easing.type: Easing.OutBounce }
                     }
                 }
                 Rectangle {
-                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 6 }
+                    anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 3 }
                     height: 4; radius: 2
                     width: app.ativo ? 16 : 4
                     color: app.model.IsDemandingAttention === true ? Tema.laranja : Tema.azul
@@ -199,23 +186,21 @@ Tile {
                 required property int index
                 readonly property string nome: decodeURIComponent(modelData.url.replace(/\/$/, "").split("/").pop())
 
-                width: 77; height: 77
+                width: 72; height: 77
                 mainText: nome
 
-                Quadro {
+                Figura {
                     sobre: toqueAtalho.containsMouse
                     apertado: toqueAtalho.pressed
 
                     Kirigami.Icon {
-                        anchors.centerIn: parent
-                        width: 46; height: 46
+                        anchors.fill: parent
                         visible: miniatura.status !== Image.Ready
                         source: Util.iconeArquivo(atalho.nome, atalho.modelData.pasta)
                     }
                     Image {
                         id: miniatura
-                        anchors.centerIn: parent
-                        width: 46; height: 46
+                        anchors.fill: parent
                         source: !atalho.modelData.pasta && Util.ehImagem(atalho.nome) ? atalho.modelData.url : ""
                         sourceSize: Qt.size(84, 84)
                         fillMode: Image.PreserveAspectFit

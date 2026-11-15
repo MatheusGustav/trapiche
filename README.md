@@ -11,7 +11,7 @@ kpackagetool6 -t Plasma/Applet -u package    # atualizar
 
 Depois, crie um painel vazio no Plasma e adicione o widget "Trapiche" a ele. A dock troca o fundo do painel por uma barra de vidro que cobre o painel inteiro, então outros widgets do Plasma (a bandeja do sistema, por exemplo) podem ficar no mesmo painel. O desfoque atrás do vidro é o do próprio Plasma: o painel precisa estar com opacidade "translúcida". A altura do painel define o tamanho dos blocos (o desenho foi feito para 77 px). Painel vertical não é suportado.
 
-Os widgets e as opções de cada um são escolhidos em "Configurar Trapiche".
+Os widgets e as opções de cada um são escolhidos em "Configurar Trapiche". A "Pasta de aplicativos" pode entrar várias vezes na dock; os aplicativos de cada uma são escolhidos na aba "Opções".
 
 ## Dependências
 

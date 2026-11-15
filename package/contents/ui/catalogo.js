@@ -1,9 +1,13 @@
 .pragma library
 
 // Cada widget: id, nome, categoria, arquivo em widgets/ e opções (k chave, r rótulo, t tipo, p padrão).
+// Com "multi", o widget pode entrar mais de uma vez na dock; as cópias têm id "base:2", "base:3"...
 var itens = [
     { id: "apps", nome: "Aplicativos", cat: "Sistema", arq: "Apps.qml",
       op: [{ k: "fixados", r: "Fixados (separados por vírgula)", t: "texto", p: "preferred://filemanager,preferred://browser" }] },
+    { id: "grupo-apps", nome: "Pasta de aplicativos", cat: "Sistema", arq: "GrupoApps.qml", multi: true,
+      op: [{ k: "nome", r: "Nome da pasta", t: "texto", p: "Aplicativos" },
+           { k: "apps", r: "Aplicativos", t: "apps", p: [] }] },
     { id: "pasta", nome: "Pasta", cat: "Sistema", arq: "Pasta.qml",
       op: [{ k: "caminho", r: "Caminho da pasta (vazio = Downloads)", t: "texto", p: "" }] },
     { id: "recentes", nome: "Abertos recentemente", cat: "Sistema", arq: "Recentes.qml" },
@@ -67,9 +71,24 @@ var itens = [
 ]
 
 function achar(id) {
+    const base = String(id).split(":")[0]
     for (const item of itens)
-        if (item.id === id) return item
+        if (item.id === base) return item
     return null
+}
+
+// Nome de uma entrada da dock: o do widget, com o número da cópia quando houver.
+function nome(id) {
+    const item = achar(id)
+    if (!item) return id + " (não existe mais)"
+    const copia = String(id).split(":")[1]
+    return copia ? item.nome + " " + copia : item.nome
+}
+
+// Chave em que as opções de uma entrada são guardadas: a do grupo compartilhado (opDe) ou a da própria entrada.
+function chaveOpcoes(id) {
+    const item = achar(id)
+    return item && item.opDe ? item.opDe : id
 }
 
 // Grupo de opções de um widget: o próprio ou o de quem ele compartilha (opDe).

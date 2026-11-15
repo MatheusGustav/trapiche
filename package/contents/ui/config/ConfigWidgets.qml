@@ -29,7 +29,12 @@ KCM.SimpleKCM {
         cfg_widgets = nova
     }
     function remover(indice) { cfg_widgets = cfg_widgets.filter((id, n) => n !== indice) }
-    function adicionar(id) { cfg_widgets = cfg_widgets.concat([id]) }
+    // Um widget que aceita cópias entra como "id", depois "id:2", "id:3"...
+    function adicionar(id) {
+        let novo = id
+        for (let n = 2; cfg_widgets.indexOf(novo) >= 0; n++) novo = id + ":" + n
+        cfg_widgets = cfg_widgets.concat([novo])
+    }
 
     ColumnLayout {
         spacing: Kirigami.Units.smallSpacing
@@ -46,11 +51,10 @@ KCM.SimpleKCM {
                 id: ativo
                 required property string modelData
                 required property int index
-                readonly property var registro: Catalogo.achar(modelData)
                 Layout.fillWidth: true
                 QQC2.Label {
                     Layout.fillWidth: true
-                    text: ativo.registro ? ativo.registro.nome : ativo.modelData + " (não existe mais)"
+                    text: Catalogo.nome(ativo.modelData)
                     elide: Text.ElideRight
                 }
                 QQC2.ToolButton { icon.name: "go-up"; enabled: ativo.index > 0; onClicked: pagina.mover(ativo.index, -1) }
@@ -80,7 +84,7 @@ KCM.SimpleKCM {
                     RowLayout {
                         id: opcao
                         required property var modelData
-                        readonly property bool usado: pagina.cfg_widgets.indexOf(modelData.id) >= 0
+                        readonly property bool usado: !modelData.multi && pagina.cfg_widgets.indexOf(modelData.id) >= 0
                         Layout.fillWidth: true
                         QQC2.Label { Layout.fillWidth: true; text: opcao.modelData.nome; elide: Text.ElideRight; opacity: opcao.usado ? 0.5 : 1 }
                         QQC2.ToolButton {

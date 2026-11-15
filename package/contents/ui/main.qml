@@ -135,6 +135,7 @@ PlasmoidItem {
                     opacity: 0
                     transform: Translate { id: deslize; y: linha.height * 0.35 }
                     onLoaded: {
+                        if (item.instancia !== undefined) item.instancia = modelData
                         entrada.start()
                         if (modelData === Plasmoid.configuration.testeAbrir && item.clicavel)
                             item.clicado()

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Moldura de cantos arredondados (raio 24) no formato de nove partes que o Plasma usa para definir a área de desfoque. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+  <path id="topleft" d="M0 24 A24 24 0 0 1 24 0 L24 24 Z"/>
+  <rect id="top" x="24" y="0" width="24" height="24"/>
+  <path id="topright" d="M48 0 A24 24 0 0 1 72 24 L48 24 Z"/>
+  <rect id="left" x="0" y="24" width="24" height="24"/>
+  <rect id="center" x="24" y="24" width="24" height="24"/>
+  <rect id="right" x="48" y="24" width="24" height="24"/>
+  <path id="bottomleft" d="M0 48 L24 48 L24 72 A24 24 0 0 1 0 48 Z"/>
+  <rect id="bottom" x="24" y="48" width="24" height="24"/>
+  <path id="bottomright" d="M48 48 L72 48 A24 24 0 0 1 48 72 Z"/>
+</svg>

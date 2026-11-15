@@ -1,14 +1,18 @@
 .pragma library
 
 // Cada widget: id, nome, categoria, arquivo em widgets/ e opções (k chave, r rótulo, t tipo, p padrão).
+// Com "multi", o widget pode entrar mais de uma vez na dock; as cópias têm id "base:2", "base:3"...
 var itens = [
-    { id: "apps", nome: "Aplicativos", cat: "Sistema", arq: "Apps.qml",
+    { id: "apps", nome: "Aplicativos", cat: "Aplicativos e pastas", arq: "Apps.qml",
       op: [{ k: "fixados", r: "Fixados (separados por vírgula)", t: "texto", p: "preferred://filemanager,preferred://browser" }] },
-    { id: "pasta", nome: "Pasta", cat: "Sistema", arq: "Pasta.qml",
+    { id: "grupo-apps", nome: "Pasta de aplicativos", cat: "Aplicativos e pastas", arq: "GrupoApps.qml", multi: true,
+      op: [{ k: "nome", r: "Nome da pasta", t: "texto", p: "Aplicativos" },
+           { k: "apps", r: "Aplicativos", t: "apps", p: [] }] },
+    { id: "pasta", nome: "Pasta", cat: "Aplicativos e pastas", arq: "Pasta.qml",
       op: [{ k: "caminho", r: "Caminho da pasta (vazio = Downloads)", t: "texto", p: "" }] },
-    { id: "recentes", nome: "Abertos recentemente", cat: "Sistema", arq: "Recentes.qml" },
-    { id: "lixeira", nome: "Lixeira", cat: "Sistema", arq: "Lixeira.qml" },
-    { id: "comandos", nome: "Comandos", cat: "Sistema", arq: "Comandos.qml" },
+    { id: "recentes", nome: "Abertos recentemente", cat: "Aplicativos e pastas", arq: "Recentes.qml" },
+    { id: "lixeira", nome: "Lixeira", cat: "Aplicativos e pastas", arq: "Lixeira.qml" },
+    { id: "comandos", nome: "Comandos", cat: "Aplicativos e pastas", arq: "Comandos.qml" },
     { id: "cpu", nome: "CPU", cat: "Sistema", arq: "Cpu.qml" },
     { id: "ram", nome: "Memória", cat: "Sistema", arq: "Ram.qml" },
     { id: "top-cpu", nome: "Maiores usos de CPU", cat: "Sistema", arq: "TopCpu.qml" },
@@ -29,7 +33,7 @@ var itens = [
     { id: "tocando-barra", nome: "Tocando agora (com progresso)", cat: "Mídia", arq: "TocandoBarra.qml" },
     { id: "tempo-de-tela", nome: "Tempo de tela", cat: "Produtividade", arq: "TempoDeTela.qml" },
     { id: "linha-do-dia", nome: "Linha do dia", cat: "Produtividade", arq: "LinhaDoDia.qml" },
-    { id: "calendario", nome: "Calendário", cat: "Produtividade", arq: "Calendario.qml" },
+    { id: "calendario", nome: "Calendário", cat: "Data e hora", arq: "Calendario.qml" },
     { id: "tarefas", nome: "Tarefas", cat: "Produtividade", arq: "Tarefas.qml" },
     { id: "notas", nome: "Notas", cat: "Produtividade", arq: "Notas.qml" },
     { id: "pomodoro", nome: "Pomodoro", cat: "Produtividade", arq: "Pomodoro.qml",
@@ -39,10 +43,10 @@ var itens = [
     { id: "timer", nome: "Timer", cat: "Produtividade", arq: "Timer.qml",
       op: [{ k: "minutos", r: "Minutos", t: "numero", p: 1 }] },
     { id: "cronometro", nome: "Cronômetro", cat: "Produtividade", arq: "Cronometro.qml" },
-    { id: "relogio-flip", nome: "Relógio de fichas", cat: "Relógios", arq: "RelogioFlip.qml",
+    { id: "relogio-flip", nome: "Relógio de fichas", cat: "Data e hora", arq: "RelogioFlip.qml",
       op: [{ k: "h24", r: "Formato 24 horas", t: "bool", p: true }] },
-    { id: "relogio-analogico", nome: "Relógio analógico", cat: "Relógios", arq: "RelogioAnalogico.qml" },
-    { id: "relogios-mundo", nome: "Relógios do mundo", cat: "Relógios", arq: "RelogiosMundo.qml",
+    { id: "relogio-analogico", nome: "Relógio analógico", cat: "Data e hora", arq: "RelogioAnalogico.qml" },
+    { id: "relogios-mundo", nome: "Relógios do mundo", cat: "Data e hora", arq: "RelogiosMundo.qml",
       op: [{ k: "cidades", r: "Cidades (SIGLA:Fuso, separadas por vírgula)", t: "texto",
              p: "NYC:America/New_York,LON:Europe/London,TYO:Asia/Tokyo" }] },
     { id: "nascer-por-do-sol", nome: "Nascer e pôr do sol", cat: "Clima", arq: "NascerPorDoSol.qml", opDe: "clima" },
@@ -66,10 +70,28 @@ var itens = [
     { id: "github", nome: "GitHub (não lidas)", cat: "Desenvolvimento", arq: "GitHubNaoLidas.qml" }
 ]
 
+// Categorias na ordem padrão da dock, da esquerda para a direita: aplicativos primeiro, data e hora no fim.
+var categorias = ["Aplicativos e pastas", "Mídia", "Clima", "Mercado", "IA", "Desenvolvimento", "Produtividade", "Sistema", "Data e hora"]
+
 function achar(id) {
+    const base = String(id).split(":")[0]
     for (const item of itens)
-        if (item.id === id) return item
+        if (item.id === base) return item
     return null
+}
+
+// Nome de uma entrada da dock: o do widget, com o número da cópia quando houver.
+function nome(id) {
+    const item = achar(id)
+    if (!item) return id + " (não existe mais)"
+    const copia = String(id).split(":")[1]
+    return copia ? item.nome + " " + copia : item.nome
+}
+
+// Chave em que as opções de uma entrada são guardadas: a do grupo compartilhado (opDe) ou a da própria entrada.
+function chaveOpcoes(id) {
+    const item = achar(id)
+    return item && item.opDe ? item.opDe : id
 }
 
 // Grupo de opções de um widget: o próprio ou o de quem ele compartilha (opDe).
@@ -78,4 +100,26 @@ function grupo(id) {
     if (!item) return null
     const dono = item.opDe ? achar(item.opDe) : item
     return dono && dono.op ? dono : null
+}
+
+
+// Lugar de uma entrada na ordem padrão: pela categoria, depois pela ordem do catálogo, depois pelo número da cópia.
+function posicao(id) {
+    const item = achar(id)
+    if (!item) return Infinity
+    const copia = parseInt(String(id).split(":")[1]) || 1
+    return categorias.indexOf(item.cat) * 1e6 + itens.indexOf(item) * 1e3 + copia
+}
+
+function ordenar(lista) {
+    return lista.slice().sort((a, b) => posicao(a) - posicao(b))
+}
+
+// Põe uma entrada nova antes da primeira que vem depois dela na ordem padrão.
+function inserir(lista, id) {
+    const nova = lista.slice()
+    let lugar = nova.findIndex(outra => posicao(outra) > posicao(id))
+    if (lugar < 0) lugar = nova.length
+    nova.splice(lugar, 0, id)
+    return nova
 }

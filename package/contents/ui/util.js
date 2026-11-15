@@ -1,7 +1,7 @@
 .pragma library
 .import "catalogo.js" as Catalogo
 
-// Opções de um widget: o que foi salvo, completado com o padrão do catálogo.
+// Opções de um widget (ou de uma cópia dele, "base:2"): o que foi salvo, completado com o padrão do catálogo.
 function opcoes(json, id) {
     let salvo = {}
     try { salvo = JSON.parse(json || "{}")[id] || {} } catch (e) {}

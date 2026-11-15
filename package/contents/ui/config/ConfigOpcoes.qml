@@ -13,26 +13,28 @@ KCM.SimpleKCM {
     property string cfg_dados
     property string cfg_testeAbrir
 
-    // Grupos de opções dos widgets que estão na dock, sem repetir.
+    // Grupos de opções dos widgets que estão na dock, sem repetir: { chave, nome, op }.
     readonly property var grupos: {
         const lista = []
         for (const id of cfg_widgets) {
-            const grupo = Catalogo.grupo(id)
-            if (grupo && lista.indexOf(grupo) < 0) lista.push(grupo)
+            const dono = Catalogo.grupo(id)
+            const chave = Catalogo.chaveOpcoes(id)
+            if (dono && !lista.some(g => g.chave === chave))
+                lista.push({ chave: chave, nome: chave === id ? Catalogo.nome(id) : dono.nome, op: dono.op })
         }
         return lista
     }
 
     function valor(grupo, opcao) {
         let salvo = {}
-        try { salvo = JSON.parse(cfg_opcoes || "{}")[grupo.id] || {} } catch (e) {}
+        try { salvo = JSON.parse(cfg_opcoes || "{}")[grupo.chave] || {} } catch (e) {}
         return salvo[opcao.k] !== undefined ? salvo[opcao.k] : opcao.p
     }
     function gravar(grupo, opcao, novo) {
         let tudo = {}
         try { tudo = JSON.parse(cfg_opcoes || "{}") } catch (e) {}
-        if (!tudo[grupo.id]) tudo[grupo.id] = {}
-        tudo[grupo.id][opcao.k] = novo
+        if (!tudo[grupo.chave]) tudo[grupo.chave] = {}
+        tudo[grupo.chave][opcao.k] = novo
         cfg_opcoes = JSON.stringify(tudo)
     }
 
@@ -73,6 +75,15 @@ KCM.SimpleKCM {
                             inputMethodHints: Qt.ImhFormattedNumbersOnly
                             text: visible ? pagina.valor(bloco.modelData, linha.modelData) : ""
                             onTextEdited: if (acceptableInput) pagina.gravar(bloco.modelData, linha.modelData, parseFloat(text))
+                        }
+                        Loader {
+                            Layout.fillWidth: true
+                            active: linha.modelData.t === "apps"
+                            visible: active
+                            sourceComponent: EscolhaApps {
+                                ids: pagina.valor(bloco.modelData, linha.modelData)
+                                onMudou: novos => pagina.gravar(bloco.modelData, linha.modelData, novos)
+                            }
                         }
                         QQC2.CheckBox {
                             visible: linha.modelData.t === "bool"

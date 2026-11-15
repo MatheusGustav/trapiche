@@ -13,13 +13,6 @@ KCM.SimpleKCM {
     property string cfg_dados
     property string cfg_testeAbrir
 
-    readonly property var categorias: {
-        const nomes = []
-        for (const item of Catalogo.itens)
-            if (nomes.indexOf(item.cat) < 0) nomes.push(item.cat)
-        return nomes
-    }
-
     function mover(indice, passo) {
         const destino = indice + passo
         if (destino < 0 || destino >= cfg_widgets.length) return
@@ -33,13 +26,21 @@ KCM.SimpleKCM {
     function adicionar(id) {
         let novo = id
         for (let n = 2; cfg_widgets.indexOf(novo) >= 0; n++) novo = id + ":" + n
-        cfg_widgets = cfg_widgets.concat([novo])
+        cfg_widgets = Catalogo.inserir(cfg_widgets, novo)
     }
 
     ColumnLayout {
         spacing: Kirigami.Units.smallSpacing
 
-        Kirigami.Heading { level: 3; text: "Na dock (da esquerda para a direita)" }
+        RowLayout {
+            Layout.fillWidth: true
+            Kirigami.Heading { Layout.fillWidth: true; level: 3; text: "Na dock (da esquerda para a direita)" }
+            QQC2.Button {
+                text: "Ordem padrão"
+                icon.name: "view-sort"
+                onClicked: pagina.cfg_widgets = Catalogo.ordenar(pagina.cfg_widgets)
+            }
+        }
         QQC2.Label {
             visible: pagina.cfg_widgets.length === 0
             text: "Nenhum widget. Adicione na lista abaixo."
@@ -67,7 +68,7 @@ KCM.SimpleKCM {
         Kirigami.Heading { level: 3; text: "Disponíveis" }
 
         Repeater {
-            model: pagina.categorias
+            model: Catalogo.categorias
             ColumnLayout {
                 id: bloco
                 required property string modelData

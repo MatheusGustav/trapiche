@@ -3,10 +3,10 @@ import "../comp"
 import "../dados"
 import "../util.js" as Util
 
-// Uso do Claude Code: últimas 5 horas, 7 dias e modelo mais usado.
+// Uso do plano do Claude Code: sessão (5 horas), semana e modelo mais usado.
 Tile {
     id: raiz
-    largura: 330
+    largura: 385
 
     UsoClaude { id: uso }
 
@@ -16,36 +16,66 @@ Tile {
         sigla: "C"
         color: "#d97757"
     }
-    Texto {
-        anchors { left: marca.right; leftMargin: 12; verticalCenter: parent.verticalCenter }
-        visible: !uso.pronto
-        text: "Sem registros locais"
-        tam: 12; fraco: true
-    }
     Column {
-        visible: uso.pronto
         anchors { left: marca.right; leftMargin: 12; right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
         spacing: 2
         Repeater {
-            model: uso.pronto ? [
-                { rotulo: "Sessão", dica: "5 horas", valor: uso.dados.h5 },
-                { rotulo: "Semana", dica: "7 dias", valor: uso.dados.d7 },
-                { rotulo: Util.nomeModelo(uso.dados.modelo), dica: "mais usado", valor: uso.dados.modeloTokens }
-            ] : []
+            model: [
+                { rotulo: "Sessão", janela: uso.pronto ? uso.dados.sessao : null, dica: uso.pronto ? uso.falta(uso.dados.sessao) : "" },
+                { rotulo: "Semana", janela: uso.pronto ? uso.dados.semana : null, dica: uso.pronto ? uso.dia(uso.dados.semana) : "" }
+            ]
             Item {
+                id: linha
                 required property var modelData
                 width: parent.width; height: 18
-                Texto { anchors.verticalCenter: parent.verticalCenter; text: modelData.rotulo; tam: 13; forte: true; width: 110 }
-                Texto { text: modelData.dica; tam: 12; fraco: true; anchors { right: valor.left; rightMargin: 10; verticalCenter: parent.verticalCenter } }
+                Texto { anchors.verticalCenter: parent.verticalCenter; text: linha.modelData.rotulo; tam: 13; forte: true }
+                Barra {
+                    anchors { left: parent.left; leftMargin: 92; right: dica.left; rightMargin: 10; verticalCenter: parent.verticalCenter }
+                    valor: uso.fracao(linha.modelData.janela)
+                }
+                Texto {
+                    id: dica
+                    anchors { right: valor.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                    width: 52
+                    horizontalAlignment: Text.AlignRight
+                    text: linha.modelData.dica
+                    tam: 12
+                    fraco: true
+                }
                 Texto {
                     id: valor
                     anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    width: 62
+                    width: 48
                     horizontalAlignment: Text.AlignRight
-                    text: Util.compacto(modelData.valor)
+                    text: uso.porcento(linha.modelData.janela)
                     tam: 13
                     forte: true
                 }
+            }
+        }
+        Item {
+            width: parent.width; height: 18
+            Texto {
+                anchors { left: parent.left; right: maisUsado.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                text: uso.pronto ? Util.nomeModelo(uso.dados.modelo) : "–"
+                tam: 13
+                forte: true
+            }
+            Texto {
+                id: maisUsado
+                anchors { right: tokens.left; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                text: "mais usado"
+                tam: 12
+                fraco: true
+            }
+            Texto {
+                id: tokens
+                anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                width: 62
+                horizontalAlignment: Text.AlignRight
+                text: uso.pronto ? Util.compacto(uso.dados.modeloTokens) : "–"
+                tam: 13
+                forte: true
             }
         }
     }

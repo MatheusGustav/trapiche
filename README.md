@@ -19,7 +19,16 @@ Além do Plasma 6: `qdbus-qt6`, `wpctl`, `nmcli`, `bluetoothctl` e `kioclient`, 
 
 Clima, criptomoeda, câmbio e ações consultam serviços públicos pela internet (Open-Meteo, Binance, open.er-api.com e Yahoo Finance).
 
-Os widgets do GitHub usam o login do `gh` (`gh auth login`). Os de uso do Claude Code leem, com `python3`, os registros locais (`~/.claude/projects`); o resumo fica em cache em `~/.cache/trapiche`.
+Os widgets do GitHub usam o login do `gh` (`gh auth login`). Os do Claude Code usam `python3`. O modelo mais usado sai dos registros locais (`~/.claude/projects`). As porcentagens do plano chegam pela linha de status do Claude Code, que precisa apontar para o script do pacote em `~/.claude/settings.json`:
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "python3 ~/.local/share/plasma/plasmoids/io.github.matheusgustav.trapiche/contents/code/linha-de-status.py"
+}
+```
+
+O script grava os limites em `~/.cache/trapiche` e não imprime nada. Os números só mudam enquanto o Claude Code está aberto; se o Trapiche for desinstalado, essa entrada precisa sair do `settings.json`.
 
 ## Desenvolvimento
 

@@ -22,9 +22,14 @@ spectacle -b -f -n -o "$saida"
 sleep 1
 kill %1
 DENTRO
-XDG_CONFIG_HOME="$tmp/config" XDG_DATA_DIRS="$tmp/data:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" \
+XDG_CONFIG_HOME="$tmp/config" XDG_DATA_HOME="$tmp/data" \
     dbus-run-session -- kwin_wayland --virtual --width "$larg" --height "$alt" --no-lockscreen \
     --socket "wl-trapiche-$$" --exit-with-session "bash $tmp/dentro.sh" 2>"$tmp/log.txt"
 grep -E "\.qml|\.js|qml:" "$tmp/log.txt" | grep -v "^kwin_" | sort | uniq -c | head -"${LINHAS_LOG:-25}"
 [ -n "${MANTER_LOG:-}" ] && cp "$tmp/log.txt" "$MANTER_LOG"
+# Serviços que a sessão de teste ativou continuam rodando depois dela; encerra os que usam a pasta descartável.
+for processo in $(pgrep -u "$(id -u)"); do
+    { tr '\0' '\n' < "/proc/$processo/environ"; } 2>/dev/null | grep -qx "XDG_CONFIG_HOME=$tmp/config" && kill "$processo"
+done
+sleep 1
 rm -rf "$tmp"

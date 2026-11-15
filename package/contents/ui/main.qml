@@ -132,34 +132,116 @@ PlasmoidItem {
             source: "dados/Rastreador.qml"
         }
 
+        // Espelho da lista da configuração. Mover uma linha dele não recria os blocos, como trocar a lista inteira faria.
+        ListModel { id: blocos }
+        function sincronizar() {
+            const alvo = Array.from(Plasmoid.configuration.widgets)
+            for (let i = blocos.count - 1; i >= 0; i--)
+                if (alvo.indexOf(blocos.get(i).wid) < 0) blocos.remove(i)
+            for (let i = 0; i < alvo.length; i++) {
+                let achado = -1
+                for (let k = i; k < blocos.count && achado < 0; k++)
+                    if (blocos.get(k).wid === alvo[i]) achado = k
+                if (achado < 0) blocos.insert(i, { wid: alvo[i] })
+                else if (achado !== i) blocos.move(achado, i, 1)
+            }
+            if (blocos.count > alvo.length) blocos.remove(alvo.length, blocos.count - alvo.length)
+        }
+        Component.onCompleted: sincronizar()
+        Connections {
+            target: Plasmoid.configuration
+            function onWidgetsChanged() { doca.sincronizar() }
+        }
+
+        // Arrastar para ordenar: segurar o clique solta o bloco, que passa a seguir a alça; os outros abrem espaço.
+        property Item arrastado: null
+        Item {
+            id: alca
+            onXChanged: if (doca.arrastado) doca.abrirEspaco()
+        }
+        function pegar(bloco) {
+            alca.x = bloco.x
+            arrastado = bloco
+        }
+        // O bloco arrastado vai para depois dos blocos cujo centro ficou à esquerda do centro dele.
+        function abrirEspaco() {
+            const centro = alca.x + arrastado.width / 2
+            let inicio = 0
+            let lugar = 0
+            for (let k = 0; k < blocos.count; k++) {
+                const outro = repetidor.itemAt(k)
+                if (outro !== arrastado && inicio + outro.width / 2 < centro) lugar++
+                inicio += outro.width + linha.spacing
+            }
+            if (lugar !== arrastado.index) blocos.move(arrastado.index, lugar, 1)
+        }
+        function soltar(gravar) {
+            if (!arrastado) return
+            arrastado = null
+            if (!gravar) return sincronizar()
+            const nova = []
+            for (let k = 0; k < blocos.count; k++) nova.push(blocos.get(k).wid)
+            Plasmoid.configuration.widgets = nova
+        }
+
         Row {
             id: linha
             anchors.verticalCenter: parent.verticalCenter
             height: doca.alturaTile
             spacing: Math.round(8 * height / 77)
+            move: Transition { NumberAnimation { properties: "x"; duration: 220; easing.type: Easing.OutCubic } }
 
             Repeater {
-                model: Plasmoid.configuration.widgets
+                id: repetidor
+                model: blocos
 
-                delegate: Item {
+                delegate: MouseArea {
                     id: vaga
-                    required property string modelData
+                    required property string wid
                     required property int index
-                    readonly property var registro: Catalogo.achar(modelData)
+                    readonly property var registro: Catalogo.achar(wid)
+                    readonly property bool solto: doca.arrastado === vaga
 
                     width: carga.width
                     height: linha.height
+                    z: solto ? 1 : 0
                     opacity: 0
-                    transform: Translate { id: deslize; y: linha.height * 0.35 }
+                    scale: solto ? 1.06 : 1
+                    Behavior on scale { NumberAnimation { duration: Tema.rapido } }
+                    transform: [
+                        Translate { id: deslize; y: linha.height * 0.35 },
+                        Translate {
+                            x: vaga.solto ? alca.x - vaga.x : 0
+                            Behavior on x { enabled: !vaga.solto; NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+                        }
+                    ]
+
+                    // Segurar o clique solta o bloco, mesmo começando num botão de dentro dele; daí em diante o arraste é desta área.
+                    drag.filterChildren: true
+                    drag.target: solto ? alca : undefined
+                    drag.axis: Drag.XAxis
+                    drag.threshold: 0
+                    drag.minimumX: 0
+                    drag.maximumX: linha.width - width
+                    pressAndHoldInterval: 350
+                    // Quem já está arrastando algo de dentro do bloco (um controle deslizante) não está segurando o bloco.
+                    property point apertou
+                    onPressed: mouse => apertou = Qt.point(mouse.x, mouse.y)
+                    onPressAndHold: mouse => {
+                        if (Math.abs(mouse.x - apertou.x) < 8 && Math.abs(mouse.y - apertou.y) < 8) doca.pegar(vaga)
+                    }
+                    // Soltar longe da dock devolve o bloco ao lugar de antes.
+                    onReleased: mouse => doca.soltar(Math.abs(mouse.y - height / 2) < height * 1.5)
+                    onCanceled: doca.soltar(false)
 
                     Loader {
                         id: carga
                         height: parent.height
                         source: vaga.registro ? "widgets/" + vaga.registro.arq : ""
                         onLoaded: {
-                            if (item.instancia !== undefined) item.instancia = vaga.modelData
+                            if (item.instancia !== undefined) item.instancia = vaga.wid
                             entrada.start()
-                            if (vaga.modelData === Plasmoid.configuration.testeAbrir && item.clicavel)
+                            if (vaga.wid === Plasmoid.configuration.testeAbrir && item.clicavel)
                                 item.clicado()
                         }
                     }
@@ -182,7 +264,7 @@ PlasmoidItem {
 
                     SequentialAnimation {
                         id: entrada
-                        PauseAnimation { duration: vaga.index * 45 }
+                        PauseAnimation { duration: Math.max(0, vaga.index) * 45 }
                         ParallelAnimation {
                             NumberAnimation { target: vaga; property: "opacity"; to: 1; duration: 260 }
                             NumberAnimation { target: deslize; property: "y"; to: 0; duration: 420; easing.type: Easing.OutBack }

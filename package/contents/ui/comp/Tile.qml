@@ -22,6 +22,13 @@ Item {
     implicitWidth: Math.round(largura * u)
     width: implicitWidth
 
+    // Fica por baixo do conteúdo: os botões de dentro do bloco recebem o clique antes. Aceita o clique mesmo em
+    // bloco não clicável, porque o arraste da dock só enxerga o clique que alguma área de dentro do bloco aceitou.
+    MouseArea {
+        id: toque
+        anchors.fill: parent
+        onClicked: if (tile.clicavel) tile.clicado()
+    }
     Item {
         id: moldura
         anchors.fill: parent
@@ -58,12 +65,6 @@ Item {
     }
 
     HoverHandler { id: pairar }
-    TapHandler {
-        id: toque
-        enabled: tile.clicavel
-        acceptedButtons: Qt.LeftButton
-        onTapped: tile.clicado()
-    }
     WheelHandler {
         enabled: tile.rolavel
         onWheel: evento => tile.rolado(evento.angleDelta.y > 0 ? 1 : -1)

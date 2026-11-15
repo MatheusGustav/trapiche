@@ -21,6 +21,11 @@ KCM.SimpleKCM {
         nova.splice(destino, 0, item)
         cfg_widgets = nova
     }
+    // Cada widget fica na seção dele; a ordem só muda entre vizinhos da mesma seção.
+    function mesmaSecao(indice, passo) {
+        const destino = indice + passo
+        return destino >= 0 && destino < cfg_widgets.length && Catalogo.secao(cfg_widgets[indice]) === Catalogo.secao(cfg_widgets[destino])
+    }
     function remover(indice) { cfg_widgets = cfg_widgets.filter((id, n) => n !== indice) }
     // Um widget que aceita cópias entra como "id", depois "id:2", "id:3"...
     function adicionar(id) {
@@ -58,8 +63,8 @@ KCM.SimpleKCM {
                     text: Catalogo.nome(ativo.modelData)
                     elide: Text.ElideRight
                 }
-                QQC2.ToolButton { icon.name: "go-up"; enabled: ativo.index > 0; onClicked: pagina.mover(ativo.index, -1) }
-                QQC2.ToolButton { icon.name: "go-down"; enabled: ativo.index < pagina.cfg_widgets.length - 1; onClicked: pagina.mover(ativo.index, 1) }
+                QQC2.ToolButton { icon.name: "go-up"; enabled: pagina.mesmaSecao(ativo.index, -1); onClicked: pagina.mover(ativo.index, -1) }
+                QQC2.ToolButton { icon.name: "go-down"; enabled: pagina.mesmaSecao(ativo.index, 1); onClicked: pagina.mover(ativo.index, 1) }
                 QQC2.ToolButton { icon.name: "list-remove"; onClicked: pagina.remover(ativo.index) }
             }
         }

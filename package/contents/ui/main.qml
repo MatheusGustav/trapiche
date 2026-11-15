@@ -26,6 +26,18 @@ PlasmoidItem {
         }
     ]
 
+    // Com o painel escondido, o atalho de teclado do widget mostra a dock; ela volta a se esconder com o atalho
+    // de novo ou quando o mouse sai dela.
+    property bool chamada: false
+    Plasmoid.onActivated: chamada = !chamada
+    Binding {
+        target: Plasmoid
+        property: "status"
+        value: PlasmaCore.Types.RequiresAttentionStatus
+        when: raiz.chamada
+        restoreMode: Binding.RestoreBindingOrValue
+    }
+
     Biblioteca {
         id: biblioteca
         visualParent: raiz
@@ -111,12 +123,14 @@ PlasmoidItem {
         readonly property bool emPainel: raiz.emPainel
         readonly property real alturaTile: emPainel ? height : 77
 
-        // Num painel que ocupa a tela inteira, a dock fica com a largura que sobra e os blocos vão para o meio.
-        Layout.minimumWidth: linha.width
-        Layout.preferredWidth: linha.width
+        // Num painel que ocupa a tela inteira, a dock fica com a largura que sobra e as seções se afastam.
+        Layout.minimumWidth: linha.minima
+        Layout.preferredWidth: linha.minima
         Layout.fillWidth: true
         Layout.minimumHeight: emPainel ? -1 : 77
         Layout.preferredHeight: emPainel ? -1 : 77
+
+        HoverHandler { onHoveredChanged: if (!hovered) raiz.chamada = false }
 
         Loader {
             active: Plasmoid.configuration.widgets.indexOf("tempo-de-tela") >= 0 || Plasmoid.configuration.widgets.indexOf("linha-do-dia") >= 0
@@ -126,7 +140,10 @@ PlasmoidItem {
         // Espelho da lista da configuração. Mover uma linha dele não recria os blocos, como trocar a lista inteira faria.
         ListModel { id: blocos }
         function sincronizar() {
-            const alvo = Array.from(Plasmoid.configuration.widgets)
+            const lista = Array.from(Plasmoid.configuration.widgets)
+            const alvo = Catalogo.porSecao(lista)
+            // Lista gravada antes das seções, ou reordenada na configuração: passa a ficar com cada seção junta.
+            if (alvo.join() !== lista.join()) Plasmoid.configuration.widgets = alvo
             for (let i = blocos.count - 1; i >= 0; i--)
                 if (alvo.indexOf(blocos.get(i).wid) < 0) blocos.remove(i)
             for (let i = 0; i < alvo.length; i++) {
@@ -137,6 +154,7 @@ PlasmoidItem {
                 else if (achado !== i) blocos.move(achado, i, 1)
             }
             if (blocos.count > alvo.length) blocos.remove(alvo.length, blocos.count - alvo.length)
+            arrumar()
         }
         Component.onCompleted: sincronizar()
         Connections {
@@ -154,17 +172,39 @@ PlasmoidItem {
             alca.x = bloco.x
             arrastado = bloco
         }
-        // O bloco arrastado vai para depois dos blocos cujo centro ficou à esquerda do centro dele.
+        // O bloco arrastado vai para a vaga da seção dele que começa mais perto da alça: a do começo ou a de depois de cada outro bloco.
         function abrirEspaco() {
-            const centro = alca.x + arrastado.width / 2
-            let inicio = 0
+            let primeiro = -1
             let lugar = 0
+            let vagas = 0
+            let inicio = linha.inicios[arrastado.secao]
+            let distancia = Math.abs(inicio - alca.x)
             for (let k = 0; k < blocos.count; k++) {
                 const outro = repetidor.itemAt(k)
-                if (outro !== arrastado && inicio + outro.width / 2 < centro) lugar++
-                inicio += outro.width + linha.spacing
+                if (outro.secao !== arrastado.secao) continue
+                if (primeiro < 0) primeiro = k
+                if (outro === arrastado) continue
+                inicio += outro.width + linha.vao
+                vagas++
+                if (Math.abs(inicio - alca.x) < distancia) {
+                    distancia = Math.abs(inicio - alca.x)
+                    lugar = vagas
+                }
             }
-            if (lugar !== arrastado.index) blocos.move(arrastado.index, lugar, 1)
+            if (primeiro + lugar === arrastado.index) return
+            blocos.move(arrastado.index, primeiro + lugar, 1)
+            arrumar()
+        }
+        // Lugar de cada bloco dentro da seção dele e a largura que cada seção ocupa.
+        function arrumar() {
+            const larguras = [0, 0, 0]
+            for (let k = 0; k < blocos.count; k++) {
+                const bloco = repetidor.itemAt(k)
+                if (!bloco) continue
+                bloco.casa = larguras[bloco.secao] > 0 ? larguras[bloco.secao] + linha.vao : 0
+                larguras[bloco.secao] = bloco.casa + bloco.width
+            }
+            linha.larguras = larguras
         }
         function soltar(gravar) {
             if (!arrastado) return
@@ -175,16 +215,51 @@ PlasmoidItem {
             Plasmoid.configuration.widgets = nova
         }
 
-        Row {
+        // Seções: aplicativos e pastas no canto esquerdo, data e hora no direito, o resto no meio, com uma barrinha entre elas.
+        Item {
             id: linha
-            anchors.centerIn: parent
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width
             height: doca.alturaTile
-            spacing: Math.round(8 * height / 77)
-            move: Transition { NumberAnimation { properties: "x"; duration: 220; easing.type: Easing.OutCubic } }
+
+            readonly property int vao: Math.round(8 * height / 77)
+            readonly property int divisa: 2 * vao + 2
+            property var larguras: [0, 0, 0]
+            // Outro widget do Plasma no mesmo painel, antes ou depois da dock, também fica separado dela.
+            readonly property var ordemNoPainel: doca.emPainel ? String(Plasmoid.containment.configuration.AppletOrder || "").split(";") : []
+            readonly property int lugarNoPainel: ordemNoPainel.indexOf(String(Plasmoid.id))
+            readonly property bool vizinhoAntes: lugarNoPainel > 0
+            readonly property bool vizinhoDepois: lugarNoPainel >= 0 && lugarNoPainel < ordemNoPainel.length - 1
+            readonly property bool divisaEsquerda: larguras[0] > 0 && larguras[1] + larguras[2] > 0
+            readonly property bool divisaDireita: larguras[2] > 0 && larguras[0] + larguras[1] > 0
+            readonly property real minima: (vizinhoAntes ? divisa : 0) + larguras[0] + (divisaEsquerda ? divisa : 0) + larguras[1]
+                                           + (divisaDireita ? divisa : 0) + larguras[2] + (vizinhoDepois ? divisa : 0)
+            // Onde cada seção começa. A do meio fica centralizada enquanto couber entre as outras duas.
+            readonly property var inicios: {
+                const esquerda = vizinhoAntes ? divisa : 0
+                const direita = Math.max(width, minima) - (vizinhoDepois ? divisa : 0) - larguras[2]
+                const menor = esquerda + larguras[0] + (divisaEsquerda ? divisa : 0)
+                const maior = direita - (divisaDireita ? divisa : 0) - larguras[1]
+                return [esquerda, Math.round(Math.max(menor, Math.min((width - larguras[1]) / 2, maior))), direita]
+            }
+
+            component Divisa: Rectangle {
+                anchors.verticalCenter: parent.verticalCenter
+                width: 2
+                height: Math.round(parent.height * 0.42)
+                radius: 1
+                color: Tema.trilho
+            }
+            Divisa { visible: linha.vizinhoAntes; x: linha.vao }
+            Divisa { visible: linha.divisaEsquerda; x: linha.inicios[0] + linha.larguras[0] + linha.vao }
+            Divisa { visible: linha.divisaDireita; x: linha.inicios[2] - linha.divisa + linha.vao }
+            Divisa { visible: linha.vizinhoDepois; x: linha.inicios[2] + linha.larguras[2] + linha.vao }
 
             Repeater {
                 id: repetidor
                 model: blocos
+                onItemAdded: Qt.callLater(doca.arrumar)
+                onItemRemoved: Qt.callLater(doca.arrumar)
 
                 delegate: MouseArea {
                     id: vaga
@@ -192,8 +267,15 @@ PlasmoidItem {
                     required property int index
                     readonly property var registro: Catalogo.achar(wid)
                     readonly property bool solto: doca.arrastado === vaga
+                    readonly property int secao: Catalogo.secao(wid)
+                    // Distância do começo da seção; ao mudar de lugar, o bloco desliza até lá.
+                    property real casa: 0
+                    property real recuo: casa
+                    Behavior on recuo { enabled: vaga.opacity === 1; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
 
+                    x: linha.inicios[secao] + recuo
                     width: carga.width
+                    onWidthChanged: Qt.callLater(doca.arrumar)
                     height: linha.height
                     z: solto ? 1 : 0
                     opacity: 0
@@ -212,8 +294,8 @@ PlasmoidItem {
                     drag.target: solto ? alca : undefined
                     drag.axis: Drag.XAxis
                     drag.threshold: 0
-                    drag.minimumX: 0
-                    drag.maximumX: linha.width - width
+                    drag.minimumX: linha.inicios[secao]
+                    drag.maximumX: linha.inicios[secao] + linha.larguras[secao] - width
                     pressAndHoldInterval: 350
                     // Quem já está arrastando algo de dentro do bloco (um controle deslizante) não está segurando o bloco.
                     property point apertou

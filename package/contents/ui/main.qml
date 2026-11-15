@@ -197,7 +197,7 @@ PlasmoidItem {
         }
         // Lugar de cada bloco dentro da seção dele e a largura que cada seção ocupa.
         function arrumar() {
-            const larguras = [0, 0, 0]
+            const larguras = [0, 0]
             for (let k = 0; k < blocos.count; k++) {
                 const bloco = repetidor.itemAt(k)
                 if (!bloco) continue
@@ -215,7 +215,7 @@ PlasmoidItem {
             Plasmoid.configuration.widgets = nova
         }
 
-        // Seções: aplicativos e pastas no canto esquerdo, data e hora no direito, o resto no meio, com uma barrinha entre elas.
+        // Seções: data e hora no canto direito e o resto no esquerdo, com uma barrinha entre as duas.
         Item {
             id: linha
             anchors.verticalCenter: parent.verticalCenter
@@ -224,24 +224,13 @@ PlasmoidItem {
 
             readonly property int vao: Math.round(8 * height / 77)
             readonly property int divisa: 2 * vao + 2
-            property var larguras: [0, 0, 0]
-            // Outro widget do Plasma no mesmo painel, antes ou depois da dock, também fica separado dela.
-            readonly property var ordemNoPainel: doca.emPainel ? String(Plasmoid.containment.configuration.AppletOrder || "").split(";") : []
-            readonly property int lugarNoPainel: ordemNoPainel.indexOf(String(Plasmoid.id))
-            readonly property bool vizinhoAntes: lugarNoPainel > 0
-            readonly property bool vizinhoDepois: lugarNoPainel >= 0 && lugarNoPainel < ordemNoPainel.length - 1
-            readonly property bool divisaEsquerda: larguras[0] > 0 && larguras[1] + larguras[2] > 0
-            readonly property bool divisaDireita: larguras[2] > 0 && larguras[0] + larguras[1] > 0
-            readonly property real minima: (vizinhoAntes ? divisa : 0) + larguras[0] + (divisaEsquerda ? divisa : 0) + larguras[1]
-                                           + (divisaDireita ? divisa : 0) + larguras[2] + (vizinhoDepois ? divisa : 0)
-            // Onde cada seção começa. A do meio fica centralizada enquanto couber entre as outras duas.
-            readonly property var inicios: {
-                const esquerda = vizinhoAntes ? divisa : 0
-                const direita = Math.max(width, minima) - (vizinhoDepois ? divisa : 0) - larguras[2]
-                const menor = esquerda + larguras[0] + (divisaEsquerda ? divisa : 0)
-                const maior = direita - (divisaDireita ? divisa : 0) - larguras[1]
-                return [esquerda, Math.round(Math.max(menor, Math.min((width - larguras[1]) / 2, maior))), direita]
-            }
+            property var larguras: [0, 0]
+            // Outro widget do Plasma antes da dock, no mesmo painel, também fica separado dela.
+            readonly property bool vizinhoAntes: doca.emPainel && String(Plasmoid.containment.configuration.AppletOrder || "").split(";").indexOf(String(Plasmoid.id)) > 0
+            readonly property bool divisaDoMeio: larguras[0] > 0 && larguras[1] > 0
+            readonly property real minima: (vizinhoAntes ? divisa : 0) + larguras[0] + (divisaDoMeio ? divisa : 0) + larguras[1]
+            // Onde cada seção começa.
+            readonly property var inicios: [vizinhoAntes ? divisa : 0, Math.max(width, minima) - larguras[1]]
 
             component Divisa: Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
@@ -251,9 +240,7 @@ PlasmoidItem {
                 color: Tema.trilho
             }
             Divisa { visible: linha.vizinhoAntes; x: linha.vao }
-            Divisa { visible: linha.divisaEsquerda; x: linha.inicios[0] + linha.larguras[0] + linha.vao }
-            Divisa { visible: linha.divisaDireita; x: linha.inicios[2] - linha.divisa + linha.vao }
-            Divisa { visible: linha.vizinhoDepois; x: linha.inicios[2] + linha.larguras[2] + linha.vao }
+            Divisa { visible: linha.divisaDoMeio; x: linha.inicios[1] - linha.divisa + linha.vao }
 
             Repeater {
                 id: repetidor

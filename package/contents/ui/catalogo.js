@@ -80,18 +80,15 @@ function achar(id) {
     return null
 }
 
-// Seção da dock em que a entrada fica: 0 no canto esquerdo (aplicativos e pastas), 2 no direito (data e hora), 1 no meio.
+// Seção da dock em que a entrada fica: 1 no canto direito (data e hora), 0 no esquerdo (todo o resto).
 function secao(id) {
     const item = achar(id)
-    if (item && item.cat === "Aplicativos e pastas") return 0
-    if (item && item.cat === "Data e hora") return 2
-    return 1
+    return item && item.cat === "Data e hora" ? 1 : 0
 }
 
 // A lista com as entradas de cada seção juntas, sem mudar a ordem dentro da seção.
 function porSecao(lista) {
-    const da = n => lista.filter(id => secao(id) === n)
-    return da(0).concat(da(1), da(2))
+    return lista.filter(id => secao(id) === 0).concat(lista.filter(id => secao(id) === 1))
 }
 
 // Nome de uma entrada da dock: o do widget, com o número da cópia quando houver.

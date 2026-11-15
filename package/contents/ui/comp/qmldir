@@ -15,3 +15,6 @@ Capa Capa.qml
 BotaoAcao BotaoAcao.qml
 Mostrador Mostrador.qml
 BarrasHoras BarrasHoras.qml
+CelulaArquivo CelulaArquivo.qml
+Migalhas Migalhas.qml
+Gerenciador Gerenciador.qml

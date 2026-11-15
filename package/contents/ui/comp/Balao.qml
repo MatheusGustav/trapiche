@@ -7,12 +7,13 @@ PlasmaCore.Dialog {
     id: balao
     property real larguraConteudo: 300
     property real alturaConteudo: 220
+    property bool fixo: false           // não some ao perder o foco (durante um arraste, por exemplo)
     default property alias conteudo: caixa.data
     signal abriu()
 
     location: Plasmoid.location
     type: PlasmaCore.Dialog.AppletPopup
-    hideOnWindowDeactivate: true
+    hideOnWindowDeactivate: !fixo
     flags: Qt.WindowStaysOnTopHint
 
     function alternar() { visible = !visible }

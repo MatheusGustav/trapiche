@@ -2,7 +2,6 @@ import QtQuick
 import QtCore
 import org.kde.plasma.plasmoid
 import "../comp"
-import "../dados"
 import "../util.js" as Util
 
 Tile {
@@ -13,30 +12,31 @@ Tile {
         const padrao = StandardPaths.writableLocation(StandardPaths.DownloadLocation).toString()
         return decodeURIComponent(padrao.replace(/^file:\/\//, ""))
     }
-    readonly property string nome: caminho.replace(/\/+$/, "").split("/").pop()
-    property var arquivos: []
 
     clicavel: true
-    onClicado: {
-        if (!balao.visible) listar()
-        balao.alternar()
-    }
+    onClicado: balao.alternar()
 
-    function listar() {
-        executor.rodar("find " + Util.aspas(caminho) + " -maxdepth 1 -mindepth 1 -not -name '.*' -printf '%T@\\t%y\\t%f\\n' | sort -rn | head -12", saida => {
-            raiz.arquivos = saida.split("\n").filter(l => l !== "").map(l => {
-                const partes = l.split("\t")
-                const nomeArquivo = partes.slice(2).join("\t")
-                return {
-                    nome: nomeArquivo,
-                    pasta: partes[1] === "d",
-                    url: "file://" + (raiz.caminho + "/" + nomeArquivo).split("/").map(encodeURIComponent).join("/")
-                }
-            })
-        })
+    // Arquivo arrastado de outro programa: parar em cima do bloco abre o balão; soltar nele copia para a pasta.
+    DropArea {
+        id: soltarNoBloco
+        anchors.fill: parent
+        keys: ["text/uri-list"]
+        onEntered: arraste => {
+            if (gerenciador.arrastando) arraste.accepted = false
+            else abrirAoPairar.restart()
+        }
+        onExited: abrirAoPairar.stop()
+        onDropped: evento => {
+            abrirAoPairar.stop()
+            gerenciador.receber(evento.urls, balao.visible ? gerenciador.pasta : raiz.caminho)
+            evento.accept(Qt.CopyAction)
+        }
     }
-
-    Comando { id: executor }
+    Timer {
+        id: abrirAoPairar
+        interval: 400
+        onTriggered: balao.visible = true
+    }
 
     // Pasta desenhada em vetor: a tampa inclina e uma folha sobe quando está aberta.
     Item {
@@ -70,36 +70,19 @@ Tile {
     Balao {
         id: balao
         visualParent: raiz
-        larguraConteudo: 380
-        alturaConteudo: cabecalho.height + grade.implicitHeight + 20
+        larguraConteudo: 460
+        alturaConteudo: 474
+        fixo: gerenciador.arrastando || gerenciador.recebendo || soltarNoBloco.containsDrag
+        onAbriu: gerenciador.abrir()
 
-        Item {
-            id: cabecalho
-            width: parent.width; height: 38
-            Texto {
-                anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                text: raiz.nome
-                tam: 15
-                forte: true
-                renderType: Text.NativeRendering
-            }
-            BotaoRedondo {
-                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                tam: 28
-                icone: "folder-open-symbolic"
-                onClicado: {
-                    Qt.openUrlExternally("file://" + raiz.caminho)
-                    balao.visible = false
-                }
-            }
-        }
-        GradeArquivos {
-            id: grade
-            anchors { left: parent.left; right: parent.right; top: cabecalho.bottom; topMargin: 6 }
-            itens: raiz.arquivos
-            mostrar: balao.visible && raiz.arquivos.length > 0
-            vazio: "Pasta vazia"
-            onAberto: balao.visible = false
+        Gerenciador {
+            id: gerenciador
+            anchors.fill: parent
+            inicio: raiz.caminho
+            mostrar: balao.visible
+            ocultos: Util.ler(Plasmoid.configuration.dados, "pastaOcultos", false)
+            onAlternarOcultos: Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "pastaOcultos", !ocultos)
+            onFechar: balao.visible = false
         }
     }
 }

@@ -17,6 +17,8 @@ Os widgets e as opções de cada um são escolhidos em "Configurar Trapiche".
 
 Além do Plasma 6: `qdbus-qt6`, `wpctl`, `nmcli`, `bluetoothctl` e `kioclient`, usados pelos widgets de brilho, áudio, rede e lixeira.
 
+O widget Pasta abre um pequeno gerenciador de arquivos e usa `python3`, `gio` (lixeira) e `wl-copy`/`wl-paste` (copiar e colar arquivos com outros programas). A ordem de cada pasta, inclusive a arrumação feita arrastando, fica em `~/.local/share/trapiche/pastas.json`.
+
 Clima, criptomoeda, câmbio e ações consultam serviços públicos pela internet (Open-Meteo, Binance, open.er-api.com e Yahoo Finance).
 
 Os widgets do GitHub usam o login do `gh` (`gh auth login`). Os do Claude Code usam `python3`. O modelo mais usado sai dos registros locais (`~/.claude/projects`). As porcentagens do plano chegam pela linha de status do Claude Code, que precisa apontar para o script do pacote em `~/.claude/settings.json`:

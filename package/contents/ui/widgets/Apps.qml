@@ -45,7 +45,7 @@ Tile {
                     y: (toque.containsMouse ? 8 : 14) + salto
                     width: 42; height: 42
                     source: app.model.decoration
-                    scale: toque.pressed ? 0.88 : (toque.containsMouse ? 1.18 : 1)
+                    scale: toque.pressed ? 0.88 : (toque.containsMouse || soltura.containsDrag ? 1.18 : 1)
                     property real salto: 0
                     Behavior on scale { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
                     Behavior on y { enabled: !pulo.running; SpringAnimation { spring: 5; damping: 0.4; mass: 0.5 } }
@@ -82,6 +82,23 @@ Tile {
                             tarefas.requestActivate(indice)
                         }
                     }
+                }
+                // Arquivo arrastado parado em cima de um app aberto traz a janela dele para a frente, para soltar lá.
+                DropArea {
+                    id: soltura
+                    anchors.fill: parent
+                    keys: ["text/uri-list"]
+                    onEntered: if (app.aberto && !app.ativo) ativarAoPairar.restart()
+                    onExited: ativarAoPairar.stop()
+                    onDropped: evento => {
+                        ativarAoPairar.stop()
+                        evento.accepted = false
+                    }
+                }
+                Timer {
+                    id: ativarAoPairar
+                    interval: 400
+                    onTriggered: tarefas.requestActivate(tarefas.makeModelIndex(app.index))
                 }
             }
         }

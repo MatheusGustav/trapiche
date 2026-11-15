@@ -1,6 +1,4 @@
 import QtQuick
-import org.kde.kirigami as Kirigami
-import "../util.js" as Util
 
 // Grade de arquivos que entra em cascata, saindo do ponto de origem (embaixo, no meio).
 Item {
@@ -58,36 +56,13 @@ Item {
                 }
             ]
 
-            Item {
-                id: figura
-                anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: 6 }
-                width: 48; height: 48
-                scale: toque.pressed ? 0.9 : (toque.containsMouse ? 1.14 : 1)
-                Behavior on scale { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
-
-                Kirigami.Icon {
-                    anchors.fill: parent
-                    visible: miniatura.status !== Image.Ready
-                    source: Util.iconeArquivo(celula.modelData.nome, celula.modelData.pasta)
-                }
-                Image {
-                    id: miniatura
-                    anchors.fill: parent
-                    source: !celula.modelData.pasta && Util.ehImagem(celula.modelData.nome) ? celula.modelData.url : ""
-                    sourceSize: Qt.size(96, 96)
-                    fillMode: Image.PreserveAspectFit
-                    asynchronous: true
-                }
-            }
-            Texto {
-                anchors { left: parent.left; right: parent.right; top: figura.bottom; topMargin: 4; leftMargin: 4; rightMargin: 4 }
-                text: celula.modelData.nome
-                tam: 11
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignTop
-                wrapMode: Text.WrapAnywhere
-                maximumLineCount: 2
-                renderType: Text.NativeRendering
+            CelulaArquivo {
+                anchors.fill: parent
+                nome: celula.modelData.nome
+                url: celula.modelData.url
+                pasta: celula.modelData.pasta
+                sobre: toque.containsMouse
+                apertado: toque.pressed
             }
             MouseArea {
                 id: toque

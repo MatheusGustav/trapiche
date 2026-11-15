@@ -30,6 +30,14 @@ function gravar(json, chave, valor) {
     return JSON.stringify(tudo)
 }
 
+// Grava uma opção de um widget, mantendo as outras.
+function gravarOpcao(json, id, chave, valor) {
+    let tudo = {}
+    try { tudo = JSON.parse(json || "{}") } catch (e) {}
+    tudo[id] = Object.assign({}, tudo[id], { [chave]: valor })
+    return JSON.stringify(tudo)
+}
+
 function dois(n) {
     return (n < 10 ? "0" : "") + Math.floor(n)
 }

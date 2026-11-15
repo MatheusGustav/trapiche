@@ -25,11 +25,19 @@ Tile {
     property real levadoX: 0
     readonly property int alvo: {
         const vaga = Math.floor(levadoX / passo)
-        if (levado < 0 || vaga < 0 || vaga === levado || vaga >= lista.count + pastas.length) return -1
-        return Math.abs(levadoX - (vaga + 0.5) * passo) < passo / 3 ? vaga : -1
+        if (levado < 0 || vaga < 0 || Math.abs(levadoX - (vaga + 0.5) * passo) >= passo / 3) return -1
+        // As vagas são dos ícones que aparecem: os aplicativos fora de pasta e, depois deles, as pastas.
+        let soltos = 0
+        for (let k = 0; k < lista.count; k++) {
+            const item = lista.itemAt(k)
+            if (!item || !item.visible) continue
+            if (soltos === vaga) return k === levado ? -1 : k
+            soltos++
+        }
+        return vaga - soltos < pastas.length ? lista.count + vaga - soltos : -1
     }
 
-    largura: Math.max(77, 10 + (lista.count + pastas.length + atalhos.length) * passo)
+    largura: Math.max(77, 10 + fileira.width)
     semFundo: true
 
     // Sem nenhum fixado grava um espaço: opção vazia voltaria para os fixados padrão.
@@ -39,6 +47,8 @@ Tile {
     function salvarAtalhos(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "atalhos", nova) }
 
     function salvarPastas(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "pastasApps", nova) }
+    // O aplicativo que está numa pasta aparece só dentro dela, mesmo aberto.
+    function naPasta(ident) { return ident !== "" && pastas.some(p => p.apps.indexOf(ident) >= 0) }
     // Põe o aplicativo arrastado numa pasta: a que já existe na vaga ou uma nova, com o aplicativo que estava lá.
     function juntar(de, para) {
         const origem = lista.itemAt(de)
@@ -145,6 +155,7 @@ Tile {
     }
 
     Row {
+        id: fileira
         anchors.centerIn: parent
         Repeater {
             id: lista
@@ -161,6 +172,7 @@ Tile {
                 property real desloc: 0
                 Behavior on desloc { enabled: raiz.levado !== app.index; NumberAnimation { duration: Tema.rapido } }
 
+                visible: !raiz.naPasta(ident)
                 width: raiz.passo; height: 77
                 z: raiz.levado === index ? 1 : 0
 

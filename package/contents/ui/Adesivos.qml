@@ -5,12 +5,12 @@ import org.kde.plasma.plasmoid
 import "comp"
 import "util.js" as Util
 
-// Notas adesivas guardadas atrás da dock: de cada uma só aparece um tracinho colorido preso à borda de cima do vidro, a partir do começo da dock.
-// Passar o mouse levanta o tracinho; clicar faz a nota subir de trás da barra. O último tracinho, com "+", cria uma nota.
+// Notas adesivas guardadas atrás da dock: de cada uma só aparece uma aba colorida em cima do vidro, a partir do começo da dock.
+// Passar o mouse levanta a aba; clicar faz a nota subir de trás da barra. A última aba, com "+", cria uma nota.
 Item {
     id: adesivos
 
-    property Item painel: null      // painel do Plasma, onde os tracinhos são desenhados
+    property Item painel: null      // painel do Plasma
     property Item molde: null       // item do painel com a geometria do vidro
     property real inicio: 0         // onde a fileira começa, na largura da dock
 
@@ -18,11 +18,12 @@ Item {
     // { cor: índice em cores, texto }
     readonly property var notas: Util.ler(Plasmoid.configuration.dados, "adesivos", [])
     property int aberta: -1
+    // Aba com o mouse em cima. Zerada quando a nota fecha: a saída do mouse nem sempre chega com o balão aberto.
     property int sobre: -1
-    // Nota que acabou de fechar: o clique na ponta dela pode chegar depois de o balão já ter fechado sozinho, e não a reabre.
+    // Nota que acabou de fechar: o clique na aba dela pode chegar depois de o balão já ter fechado sozinho, e não a reabre.
     property int recemFechada: -1
 
-    readonly property int larguraPonta: 120
+    readonly property int larguraAba: 120
     // Começo da dock dentro do painel. Refeito quando a dock ou o painel mudam de tamanho.
     readonly property real origem: {
         inicio; parent.width
@@ -31,10 +32,8 @@ Item {
         return parent.mapToItem(painel, 0, 0).x
     }
     readonly property int vao: 8
-    // Espaço que sobra na janela do painel acima do vidro: é o quanto um tracinho consegue passar da borda.
-    readonly property real folga: molde ? molde.y : 0
-    // Quanto o tracinho desce por cima do vidro e da beirada dos blocos.
-    readonly property int descida: 8
+    readonly property int alturaAba: 16
+    readonly property int alturaLevantada: 22
 
     function salvar(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "adesivos", nova) }
     function criar() {
@@ -45,17 +44,36 @@ Item {
         salvar(nova)
         Qt.callLater(abrir, nova.length - 1)
     }
+    // Com outra nota aberta, o balão continua aberto e só troca de nota: fechar e abrir em seguida o faria perder o foco e sumir.
     function abrir(indice) {
-        const mesma = aberta === indice
-        if (balao.visible) balao.visible = false
-        if (mesma || indice === recemFechada || !notas[indice]) return
+        if (indice === recemFechada) return
+        if (aberta === indice) {
+            balao.visible = false
+            return
+        }
+        indice -= largar(indice)
+        if (!notas[indice]) {
+            balao.visible = false
+            return
+        }
         aberta = indice
         editor.text = notas[indice].texto
-        balao.visualParent = toques.itemAt(indice)
-        balao.visible = true
+        balao.visualParent = abas.itemAt(indice)
         descer.stop()
+        cartao.y = caixa.height
+        balao.visible = true
         subir.restart()
         editor.forceActiveFocus()
+        editor.cursorPosition = editor.length
+    }
+    // Grava a nota aberta e a tira da lista se ficou vazia. Devolve 1 se a que saiu estava antes da posição dada.
+    function largar(posicao) {
+        const indice = aberta
+        guardar()
+        aberta = -1
+        if (indice < 0 || !notas[indice] || notas[indice].texto.trim() !== "") return 0
+        salvar(notas.filter((n, k) => k !== indice))
+        return indice < posicao ? 1 : 0
     }
     function guardar() {
         gravacao.stop()
@@ -72,73 +90,63 @@ Item {
         balao.visible = false
         salvar(notas.filter((n, k) => k !== indice))
     }
-    // Ao fechar, o texto é gravado; a nota que ficou vazia some.
     function fechou() {
-        const indice = aberta
-        guardar()
-        aberta = -1
-        recemFechada = indice
+        sobre = -1
+        recemFechada = aberta
         esquecer.restart()
+        largar(0)
         cartao.y = caixa.height
-        if (indice >= 0 && notas[indice] && notas[indice].texto.trim() === "") salvar(notas.filter((n, k) => k !== indice))
     }
 
-    // Fileira no painel, por cima do vidro.
-    Item {
+    // As abas ficam numa janela filha da do painel, encostada na borda de cima do vidro: aparece e some com ele.
+    // Dentro da janela do painel não daria: ela acaba pouco acima do vidro, e o Plasma desvia para os blocos o clique nessa beirada.
+    WindowContainer {
         parent: adesivos.painel
-        visible: adesivos.visible
-        z: 1
+        visible: adesivos.visible && adesivos.painel !== null
         x: adesivos.origem + adesivos.inicio
+        y: (adesivos.molde ? adesivos.molde.y : 0) - height
+        width: (adesivos.notas.length + 1) * (adesivos.larguraAba + adesivos.vao) - adesivos.vao
+        height: adesivos.alturaLevantada + 4
 
-        Repeater {
-            model: adesivos.notas.length + 1
+        window: Window {
+            color: "transparent"
+            flags: Qt.FramelessWindowHint
 
-            Rectangle {
-                id: ponta
-                required property int index
-                readonly property bool nova: index === adesivos.notas.length
-                // Quanto passa da borda do vidro: mais com o mouse em cima ou com a nota aberta.
-                property real sobra: Math.min(adesivos.folga, adesivos.sobre === index || adesivos.aberta === index ? 8 : 5)
-                Behavior on sobra { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
-
-                x: index * (adesivos.larguraPonta + adesivos.vao)
-                y: adesivos.folga - sobra
-                width: adesivos.larguraPonta
-                height: sobra + adesivos.descida
-                radius: 4
-                color: nova ? (Tema.escuro ? "#8cffffff" : "#8c000000") : adesivos.cores[adesivos.notas[index].cor % adesivos.cores.length]
-
-                Icone {
-                    anchors.centerIn: parent
-                    visible: ponta.nova
-                    source: "list-add-symbolic"
-                    tam: 10
-                    cor: Tema.escuro ? "#1c1c1e" : "white"
-                }
-            }
-        }
-        // O toque cobre o tracinho inteiro, levantado.
-        Repeater {
-            id: toques
-            model: adesivos.notas.length + 1
-
-            PlasmaCore.ToolTipArea {
-                id: toque
-                required property int index
-                readonly property bool nova: index === adesivos.notas.length
-
-                x: index * (adesivos.larguraPonta + adesivos.vao)
-                width: adesivos.larguraPonta
-                height: adesivos.folga + adesivos.descida
-                active: !balao.visible
-                mainText: nova ? "Nova nota" : adesivos.notas[index].texto.trim().split("\n")[0]
+            Repeater {
+                id: abas
+                model: adesivos.notas.length + 1
 
                 MouseArea {
-                    anchors.fill: parent
+                    id: aba
+                    required property int index
+                    readonly property bool nova: index === adesivos.notas.length
+                    property real altura: adesivos.sobre === index || adesivos.aberta === index ? adesivos.alturaLevantada : adesivos.alturaAba
+                    Behavior on altura { SpringAnimation { spring: 5; damping: 0.35; mass: 0.5 } }
+
+                    x: index * (adesivos.larguraAba + adesivos.vao)
+                    width: adesivos.larguraAba
+                    height: parent.height
                     hoverEnabled: true
-                    onEntered: adesivos.sobre = toque.index
-                    onExited: if (adesivos.sobre === toque.index) adesivos.sobre = -1
-                    onClicked: toque.nova ? adesivos.criar() : adesivos.abrir(toque.index)
+                    onEntered: adesivos.sobre = index
+                    onExited: if (adesivos.sobre === index) adesivos.sobre = -1
+                    onClicked: nova ? adesivos.criar() : adesivos.abrir(index)
+
+                    // O que passa do fim da janela fica escondido, como se estivesse atrás da barra.
+                    Rectangle {
+                        y: parent.height - aba.altura
+                        width: parent.width
+                        height: aba.altura + 8
+                        radius: 6
+                        color: aba.nova ? (Tema.escuro ? "#8cffffff" : "#8c000000") : adesivos.cores[adesivos.notas[aba.index].cor % adesivos.cores.length]
+
+                        Icone {
+                            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: (adesivos.alturaAba - tam) / 2 }
+                            visible: aba.nova
+                            source: "list-add-symbolic"
+                            tam: 12
+                            cor: Tema.escuro ? "#1c1c1e" : "white"
+                        }
+                    }
                 }
             }
         }

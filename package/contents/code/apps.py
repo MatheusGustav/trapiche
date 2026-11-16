@@ -3,7 +3,8 @@
 
 Recebe um JSON como argumento e imprime uma lista de {"id", "nome", "icone", "caminho"}:
   {"acao": "listar"}                    todos os aplicativos visíveis, por nome
-  {"acao": "resolver", "ids": [...]}    só os pedidos, na ordem pedida (os que não existem ficam de fora)
+  {"acao": "resolver", "ids": [...]}    só os pedidos, na ordem pedida, inclusive os que ficam fora do menu de
+                                        aplicativos (os que não existem ficam de fora)
 """
 import json
 import os
@@ -16,7 +17,7 @@ def pastas():
     return [os.path.join(pasta, "applications") for pasta in [casa] + outras if pasta]
 
 
-def ler(caminho):
+def ler(caminho, fora_do_menu):
     """Campos do grupo [Desktop Entry], ou None se não for um aplicativo visível."""
     campos = {}
     dentro = False
@@ -31,7 +32,9 @@ def ler(caminho):
                     campos[chave.strip()] = valor.strip()
     except OSError:
         return None
-    if campos.get("Type") != "Application" or campos.get("NoDisplay") == "true" or campos.get("Hidden") == "true":
+    if campos.get("Type") != "Application" or campos.get("Hidden") == "true":
+        return None
+    if campos.get("NoDisplay") == "true" and not fora_do_menu:
         return None
     ambientes = [a for a in campos.get("OnlyShowIn", "").split(";") if a]
     if (ambientes and "KDE" not in ambientes) or "KDE" in campos.get("NotShowIn", "").split(";"):
@@ -42,7 +45,7 @@ def ler(caminho):
     return {"nome": nome, "icone": campos.get("Icon", ""), "caminho": caminho}
 
 
-def instalados():
+def instalados(fora_do_menu):
     """Dicionário id -> aplicativo; a primeira pasta que tem o id vence."""
     achados = {}
     for base in pastas():
@@ -54,7 +57,7 @@ def instalados():
                 ident = os.path.relpath(caminho, base)[:-len(".desktop")].replace(os.sep, "-")
                 if ident in achados:
                     continue
-                app = ler(caminho)
+                app = ler(caminho, fora_do_menu)
                 if app:
                     app["id"] = ident
                     achados[ident] = app
@@ -66,7 +69,7 @@ def main():
         pedido = json.loads(sys.argv[1])
     except (IndexError, ValueError):
         pedido = {}
-    apps = instalados()
+    apps = instalados(pedido.get("acao") == "resolver")
     if pedido.get("acao") == "resolver":
         saida = [apps[ident] for ident in pedido.get("ids") or [] if ident in apps]
     else:

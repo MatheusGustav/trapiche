@@ -80,17 +80,41 @@ Tile {
         salvarPastas(pastas.map((p, n) => n === indice ? { nome: p.nome, apps: resto } : p))
     }
     function alternarFixado(url, fixado) {
-        if (fixado ? tarefas.requestRemoveLauncher(url) : tarefas.requestAddLauncher(url)) salvarFixados()
+        if (!(fixado ? tarefas.requestRemoveLauncher(url) : tarefas.requestAddLauncher(url))) return
+        salvarFixados()
+        // O lançador de um site só existe para a dock: desafixado, sai do disco.
+        const site = /(trapiche-site-[a-z0-9-]+)\.desktop$/.exec(String(url))
+        if (fixado && site) rodarSite({ acao: "apagar", id: site[1] }, null)
+    }
+    function rodarSite(pedido, retorno) {
+        executor.rodar("python3 " + Util.script(Qt.resolvedUrl("."), "site.py") + " " + Util.aspas(JSON.stringify(pedido)), retorno)
+    }
+    // Link de site solto na dock vira aplicativo: code/site.py cria o lançador e baixa o ícone, que o pintor deixa pronto.
+    function fixarSite(url) {
+        rodarSite({ acao: "criar", url: url }, saida => {
+            let site = null
+            try { site = JSON.parse(saida) } catch (e) {}
+            if (!site || !site.id) return
+            const fixar = () => {
+                if (!raiz.naPasta(site.id) && tarefas.requestAddLauncher("applications:" + site.id + ".desktop")) raiz.salvarFixados()
+            }
+            if (site.icone.endsWith(".svg")) fixar()
+            else pintor.pintar(site, fixar)
+        })
     }
     function tirarAtalho(indice) { salvarAtalhos(atalhos.filter((a, n) => n !== indice)) }
 
-    // Solto de fora: aplicativo (.desktop) fica fixado; arquivo ou pasta vira atalho. O que não existe é ignorado.
+    // Solto de fora: aplicativo (.desktop) fica fixado; arquivo ou pasta vira atalho; link de site vira aplicativo.
+    // O que não existe é ignorado.
     function soltou(urls) {
         const locais = []
+        const sites = []
         for (const url of urls) {
             const texto = url.toString()
             if (texto.startsWith("file://") && locais.indexOf(texto) < 0) locais.push(texto)
+            else if (/^https?:\/\//i.test(texto) && sites.indexOf(texto) < 0) sites.push(texto)
         }
+        sites.forEach(fixarSite)
         if (locais.length === 0) return
         const caminhos = locais.map(u => Util.aspas(decodeURIComponent(u.slice(7))))
         executor.rodar("for f in " + caminhos.join(" ") + "; do if [ -d \"$f\" ]; then echo d; elif [ -e \"$f\" ]; then echo f; else echo n; fi; done", saida => {
@@ -127,6 +151,77 @@ Tile {
     }
 
     Comando { id: executor }
+    // Pinta o ícone de um site no arquivo que o lançador dele usa: a imagem baixada com os cantos arredondados,
+    // ou um quadrado com a inicial quando o site não tem ícone que sirva. Fica escondido atrás do recorte.
+    Item {
+        width: 1; height: 1
+        clip: true
+
+        Canvas {
+            id: pintor
+            property var fila: []
+            property var atual: null        // { site, depois }
+            property bool pedido: false
+            readonly property string imagem: atual && atual.site.bruto !== "" ? "file://" + atual.site.bruto : ""
+
+            width: 256; height: 256
+            renderTarget: Canvas.Image
+
+            function pintar(site, depois) {
+                fila.push({ site: site, depois: depois })
+                if (!atual) proximo()
+            }
+            function proximo() {
+                atual = fila.shift() || null
+                if (!atual) return
+                if (imagem !== "" && !isImageLoaded(imagem)) {
+                    loadImage(imagem)
+                    espera.restart()
+                } else {
+                    desenhar()
+                }
+            }
+            function desenhar() {
+                espera.stop()
+                pedido = true
+                requestPaint()
+            }
+            onImageLoaded: if (atual && !pedido) desenhar()
+            onPaint: {
+                if (!pedido) return
+                const ctx = getContext("2d")
+                ctx.reset()
+                ctx.beginPath()
+                ctx.roundedRect(0, 0, width, height, 58, 58)
+                ctx.clip()
+                if (imagem !== "" && isImageLoaded(imagem)) {
+                    ctx.drawImage(imagem, 0, 0, width, height)
+                    return
+                }
+                const nome = atual.site.nome
+                let soma = 0
+                for (let i = 0; i < nome.length; i++) soma = (soma * 31 + nome.charCodeAt(i)) % 360
+                ctx.fillStyle = Qt.hsla(soma / 360, 0.45, 0.36, 1)
+                ctx.fillRect(0, 0, width, height)
+                ctx.fillStyle = "white"
+                ctx.font = "bold 150px sans-serif"
+                ctx.textAlign = "center"
+                ctx.textBaseline = "middle"
+                ctx.fillText(nome.charAt(0).toUpperCase(), width / 2, height / 2 + 6)
+            }
+            onPainted: {
+                if (!pedido) return
+                pedido = false
+                save(atual.site.icone)
+                if (imagem !== "") unloadImage(imagem)
+                const depois = atual.depois
+                depois()
+                proximo()
+            }
+            // Imagem que não abre: fica o quadrado com a inicial.
+            Timer { id: espera; interval: 4000; onTriggered: pintor.desenhar() }
+        }
+    }
     PlasmaExtras.Menu {
         id: menu
         property string rotulo

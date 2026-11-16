@@ -227,6 +227,27 @@ PlasmoidItem {
             Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "posicoes", novas)
         }
 
+        // Link de site solto em qualquer ponto da dock vai para o bloco "Aplicativos", que o fixa como aplicativo.
+        // Fica por baixo dos blocos: o que eles mesmos aceitam não chega aqui. Sem o bloco, ou sem link, quem recebe
+        // é o painel do Plasma, como antes.
+        function links(urls) { return Array.from(urls).filter(url => /^https?:\/\//i.test(url.toString())) }
+        function blocoApps() {
+            for (let k = 0; k < blocos.count; k++) {
+                const vaga = repetidor.itemAt(k)
+                if (vaga && vaga.wid === "apps" && vaga.bloco) return vaga.bloco
+            }
+            return null
+        }
+        DropArea {
+            anchors.fill: parent
+            keys: ["text/uri-list"]
+            onEntered: evento => { if (!doca.blocoApps() || doca.links(evento.urls).length === 0) evento.accepted = false }
+            onDropped: evento => {
+                const apps = doca.blocoApps()
+                if (apps) apps.soltou(doca.links(evento.urls))
+            }
+        }
+
         Item {
             id: linha
             anchors.verticalCenter: parent.verticalCenter
@@ -267,6 +288,7 @@ PlasmoidItem {
                     required property string wid
                     required property int index
                     readonly property var registro: Catalogo.achar(wid)
+                    readonly property Item bloco: carga.item
                     readonly property bool solto: doca.arrastado === vaga
                     readonly property int secao: Catalogo.secao(wid)
                     // Lugar do bloco na barra; ao mudar de lugar, ele desliza até lá.

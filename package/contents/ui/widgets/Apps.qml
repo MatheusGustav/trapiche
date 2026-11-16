@@ -16,7 +16,7 @@ Tile {
 
     // Pastas de aplicativos, criadas ao arrastar um ícone para cima de outro: { nome, apps: [ids de code/apps.py] }.
     readonly property var pastas: Util.ler(Plasmoid.configuration.dados, "pastasApps", [])
-    // Com o clique num ícone de aplicativo, quem arrasta é o ícone: a dock não solta o bloco inteiro.
+    // Enquanto um ícone de aplicativo é arrastado, a dock não solta o bloco inteiro.
     property bool arrasteProprio: false
     // Largura da vaga de cada ícone.
     readonly property int passo: 60
@@ -221,12 +221,12 @@ Tile {
                     onPressed: mouse => {
                         inicio = mouse.x
                         arrastou = false
-                        raiz.arrasteProprio = mouse.button === Qt.LeftButton && app.ident !== ""
                     }
                     onPositionChanged: mouse => {
                         if (!(mouse.buttons & Qt.LeftButton) || app.ident === "") return
                         if (raiz.levado !== app.index && Math.abs(mouse.x - inicio) > 10) {
                             raiz.levado = app.index
+                            raiz.arrasteProprio = true
                             arrastou = true
                         }
                         if (raiz.levado === app.index) {

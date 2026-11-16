@@ -12,7 +12,7 @@ Tile {
     Marca {
         id: marca
         anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-        sigla: "GH"; color: "#24292f"
+        logotipo: "github"; color: "#24292f"
     }
     Texto {
         anchors { left: marca.right; leftMargin: 12; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }

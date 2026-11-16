@@ -13,7 +13,8 @@ Tile {
     Marca {
         id: marca
         anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-        sigla: "C"
+        logotipo: "claude"
+        corLogotipo: "#faf9f5"
         color: "#d97757"
     }
     Column {

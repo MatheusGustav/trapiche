@@ -1,10 +1,10 @@
 import QtQuick
 
-// Quadrado colorido com iniciais: fica no lugar do logotipo de um serviço.
+// Quadrado colorido com o logotipo de um serviço, pintado de uma cor só. "logotipo" é o nome do arquivo em contents/images.
 Rectangle {
     id: marca
-    property string sigla
-    property color corTexto: "white"
+    property string logotipo
+    property color corLogotipo: "white"
     property real tam: 57
 
     width: tam
@@ -12,11 +12,10 @@ Rectangle {
     radius: tam * 0.24
     color: Tema.azul
 
-    Texto {
+    Icone {
         anchors.centerIn: parent
-        text: marca.sigla
-        tam: marca.tam * (marca.sigla.length > 1 ? 0.36 : 0.5)
-        forte: true
-        color: marca.corTexto
+        source: Qt.resolvedUrl("../../images/" + marca.logotipo + ".svg")
+        tam: marca.tam * 0.64
+        cor: marca.corLogotipo
     }
 }

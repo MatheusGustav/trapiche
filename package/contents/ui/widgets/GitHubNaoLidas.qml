@@ -24,6 +24,6 @@ Tile {
     }
     Marca {
         anchors { right: parent.right; rightMargin: 14; top: parent.top; topMargin: 12 }
-        tam: 24; sigla: "GH"; color: "#24292f"
+        tam: 24; logotipo: "github"; color: "#24292f"
     }
 }

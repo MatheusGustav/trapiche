@@ -43,3 +43,11 @@ O script grava os limites em `~/.cache/trapiche` e não imprime nada. Os número
 `dev/foto.sh saida.png` roda o plasmoide num compositor virtual, fora da tela e com configuração descartável, e salva uma foto. As variáveis `WIDGETS`, `OPCOES`, `DADOS` e `ABRIR` montam o cenário.
 
 O catálogo de widgets fica em `package/contents/ui/catalogo.js`; cada widget é um arquivo em `package/contents/ui/widgets/`.
+
+## Licença
+
+Copyright (C) 2026 Gustav
+
+O Trapiche é software livre: pode ser redistribuído e modificado nos termos da GNU General Public License, versão 2 ou, à escolha de quem usa, qualquer versão posterior. É distribuído sem nenhuma garantia. O texto da licença está em `LICENSE`.
+
+Os logotipos do GitHub e do Claude, em `package/contents/images`, são marcas dos seus donos e não estão sob essa licença.

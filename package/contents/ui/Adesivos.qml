@@ -25,7 +25,8 @@ Item {
     // Nota que acabou de fechar: o clique na aba dela pode chegar depois de o balão já ter fechado sozinho, e não a reabre.
     property int recemFechada: -1
 
-    readonly property int larguraAba: 140
+    // A aba tem a largura da nota aberta, que sobe de cima dela.
+    readonly property int larguraAba: 288
     // Começo da dock dentro do painel. Refeito quando a dock ou o painel mudam de tamanho.
     readonly property real origem: {
         inicio; parent.width
@@ -36,8 +37,6 @@ Item {
     readonly property int vao: 8
     readonly property int alturaAba: 16
     readonly property int alturaLevantada: 22
-    // A nota aberta tem a largura de duas abas.
-    readonly property int larguraNota: 2 * larguraAba + vao
     readonly property int alturaNota: 140
 
     function salvar(nova) { Plasmoid.configuration.dados = Util.gravar(Plasmoid.configuration.dados, "adesivos", nova) }
@@ -63,7 +62,7 @@ Item {
         }
         aberta = indice
         editor.text = notas[indice].texto
-        balao.visualParent = abas.itemAt(indice).ancora
+        balao.visualParent = abas.itemAt(indice)
         descer.stop()
         cartao.y = caixa.height
         balao.visible = true
@@ -136,10 +135,6 @@ Item {
                     onExited: if (adesivos.sobre === index) adesivos.sobre = -1
                     onClicked: nova ? adesivos.criar() : adesivos.abrir(index)
 
-                    // O balão se centra neste item: a nota sobe com a borda esquerda na da aba.
-                    property alias ancora: ancora
-                    Item { id: ancora; width: adesivos.larguraNota; height: parent.height }
-
                     // O que passa do fim da janela fica escondido, como se estivesse atrás da barra.
                     Rectangle {
                         y: parent.height - aba.altura
@@ -164,7 +159,7 @@ Item {
     Balao {
         id: balao
         backgroundHints: PlasmaCore.Dialog.NoBackground
-        larguraConteudo: adesivos.larguraNota
+        larguraConteudo: adesivos.larguraAba
         alturaConteudo: adesivos.alturaNota + 16
         onVisibleChanged: if (!visible) adesivos.fechou()
 

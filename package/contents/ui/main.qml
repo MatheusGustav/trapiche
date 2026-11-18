@@ -129,8 +129,10 @@ PlasmoidItem {
         readonly property real alturaTile: emPainel ? height : 77
 
         // Num painel que ocupa a tela inteira, a dock fica com a largura que sobra e os blocos podem ficar afastados.
-        Layout.minimumWidth: linha.minima
-        Layout.preferredWidth: linha.minima
+        // Com menos largura do que a fileira pede, os blocos encolhem (ver linha.escala); fora de um painel, a dock
+        // não fica menor do que a fileira.
+        Layout.minimumWidth: emPainel ? -1 : Layout.preferredWidth
+        Layout.preferredWidth: Math.ceil(linha.desenho * alturaTile / 77) + linha.folga
         Layout.fillWidth: true
         Layout.minimumHeight: emPainel ? -1 : 77
         Layout.preferredHeight: emPainel ? -1 : 77
@@ -203,6 +205,9 @@ PlasmoidItem {
                 if (bloco) itens.push(bloco)
             }
             linha.ocupado = itens.reduce((soma, bloco) => soma + bloco.width, 0) + Math.max(0, itens.length - 1) * linha.vao
+            linha.desenho = itens.reduce((soma, bloco) => soma + (bloco.bloco ? bloco.bloco.largura : 0), 0)
+                + Math.max(0, itens.length - 1) * 8 + (linha.vizinhoAntes ? 16 : 0)
+            linha.folga = itens.length + (linha.vizinhoAntes ? 3 : 0)
             const lugares = Posicoes.arrumar(itens.map(bloco => ({ larg: bloco.width, secao: bloco.secao, pos: posicoes[bloco.wid] })),
                                              linha.origem, linha.fim, linha.vao, linha.u)
             itens.forEach((bloco, k) => bloco.casa = lugares[k])
@@ -252,8 +257,16 @@ PlasmoidItem {
             id: linha
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width
-            height: doca.alturaTile
+            // Tira a mesma medida de cima e de baixo, para a fileira continuar centrada em pixel inteiro.
+            height: Math.max(0, doca.alturaTile - 2 * Math.ceil(doca.alturaTile * (1 - escala) / 2))
 
+            // Largura da fileira com os blocos encostados, na medida do desenho (altura 77), e o que o arredondamento
+            // de cada medida pode somar a ela.
+            property real desenho: 0
+            property int folga: 0
+            // Sem largura para a fileira no tamanho do painel, os blocos encolhem todos juntos até caber.
+            readonly property real escala: desenho > 0 && width > folga
+                ? Math.min(1, (width - folga) / (desenho * doca.alturaTile / 77)) : 1
             readonly property real u: height / 77
             readonly property int vao: Math.round(8 * u)
             readonly property int divisa: 2 * vao + 2

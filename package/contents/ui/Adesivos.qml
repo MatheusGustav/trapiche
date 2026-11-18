@@ -25,8 +25,9 @@ Item {
     // Nota que acabou de fechar: o clique na aba dela pode chegar depois de o balão já ter fechado sozinho, e não a reabre.
     property int recemFechada: -1
 
-    // A aba tem a largura da nota aberta, que sobe de cima dela.
-    readonly property int larguraAba: 288
+    readonly property int larguraNota: 288
+    // A aba tem a largura da nota aberta, que sobe de cima dela; sem lugar para todas até o fim da dock, ficam mais estreitas.
+    readonly property int larguraAba: Math.max(2 * alturaAba, Math.min(larguraNota, Math.floor((parent.width - inicio + vao) / (notas.length + 1)) - vao))
     // Começo da dock dentro do painel. Refeito quando a dock ou o painel mudam de tamanho.
     readonly property real origem: {
         inicio; parent.width
@@ -159,7 +160,7 @@ Item {
     Balao {
         id: balao
         backgroundHints: PlasmaCore.Dialog.NoBackground
-        larguraConteudo: adesivos.larguraAba
+        larguraConteudo: adesivos.larguraNota
         alturaConteudo: adesivos.alturaNota + 16
         onVisibleChanged: if (!visible) adesivos.fechou()
 
